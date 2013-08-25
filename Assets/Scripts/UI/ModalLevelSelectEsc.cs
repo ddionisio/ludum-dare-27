@@ -1,24 +1,21 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class ModalMain : UIController {
-    public UIEventListener play;
+public class ModalLevelSelectEsc : UIController {
     public UIEventListener options;
     public UIEventListener help;
-    public UIEventListener credits;
+    public UIEventListener exit;
 
     protected override void OnActive(bool active) {
         if(active) {
-            play.onClick = OnPlay;
             options.onClick = OnOptions;
             help.onClick = OnHelp;
-            credits.onClick = OnCredits;
+            exit.onClick = OnExit;
         }
         else {
-            play.onClick = null;
             options.onClick = null;
             help.onClick = null;
-            credits.onClick = null;
+            exit.onClick = null;
         }
     }
 
@@ -26,10 +23,6 @@ public class ModalMain : UIController {
     }
 
     protected override void OnClose() {
-    }
-
-    void OnPlay(GameObject go) {
-        Main.instance.sceneManager.LoadScene("levelSelect");
     }
 
     void OnOptions(GameObject go) {
@@ -40,7 +33,7 @@ public class ModalMain : UIController {
         UIModalManager.instance.ModalOpen("help");
     }
 
-    void OnCredits(GameObject go) {
-        UIModalManager.instance.ModalOpen("credits");
+    void OnExit(GameObject go) {
+        Main.instance.sceneManager.LoadScene(Main.instance.startScene);
     }
 }

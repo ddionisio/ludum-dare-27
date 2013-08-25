@@ -1,15 +1,26 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class ModalLevelSelect : MonoBehaviour {
+public class ModalLevelSelect : UIController {
 
-	// Use this for initialization
-	void Start () {
-	
-	}
-	
-	// Update is called once per frame
-	void Update () {
-	
-	}
+    protected override void OnActive(bool active) {
+        if(active) {
+            Main.instance.input.AddButtonCall(0, InputAction.MenuEscape, OnEsc);
+        }
+        else {
+            Main.instance.input.RemoveButtonCall(0, InputAction.MenuEscape, OnEsc);
+        }
+    }
+
+    protected override void OnOpen() {
+    }
+
+    protected override void OnClose() {
+    }
+
+    void OnEsc(InputManager.Info dat) {
+        if(dat.state == InputManager.State.Pressed) {
+            UIModalManager.instance.ModalOpen("menu");
+        }
+    }
 }

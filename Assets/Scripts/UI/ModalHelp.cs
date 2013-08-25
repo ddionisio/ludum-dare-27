@@ -1,10 +1,8 @@
-﻿using UnityEngine;
-using System.Collections;
-
-public class ModalStart : UIController {
+﻿public class ModalHelp : UIController {
 
     protected override void OnActive(bool active) {
         if(active) {
+            UICamera.selectedObject = gameObject;
         }
         else {
         }
@@ -14,5 +12,9 @@ public class ModalStart : UIController {
     }
 
     protected override void OnClose() {
+    }
+
+    void OnClick() {
+        UIModalManager.instance.ModalCloseTop();
     }
 }
