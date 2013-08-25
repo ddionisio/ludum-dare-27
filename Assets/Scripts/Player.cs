@@ -9,6 +9,17 @@ public class Player : EntityBase {
         Dead
     }
 
+    private static Player mInstance;
+
+    private bool mIsGoal;
+    private PlayerController mCtrl;
+
+    public static Player instance { get { return mInstance; } }
+
+    public PlayerController controller { get { return mCtrl; } }
+
+    public bool isGoal { get { return mIsGoal; } set { mIsGoal = value; } }
+
     protected override void StateChanged() {
     }
 
@@ -19,6 +30,9 @@ public class Player : EntityBase {
     }
 
     protected override void OnDestroy() {
+        if(mInstance == this)
+            mInstance = null;
+
         //dealloc here
 
         base.OnDestroy();
@@ -26,6 +40,8 @@ public class Player : EntityBase {
 
     public override void Release() {
         state = (int)State.Invalid;
+
+        mIsGoal = false;
 
         base.Release();
     }
@@ -40,10 +56,18 @@ public class Player : EntityBase {
     }
 
     protected override void Awake() {
-        base.Awake();
+        if(mInstance == null) {
+            mInstance = this;
 
-        //initialize variables
-        autoSpawnFinish = true;
+            mCtrl = GetComponent<PlayerController>();
+
+            base.Awake();
+
+            //initialize variables
+            autoSpawnFinish = true;
+        }
+        else
+            DestroyImmediate(gameObject);
     }
 
     // Use this for initialization

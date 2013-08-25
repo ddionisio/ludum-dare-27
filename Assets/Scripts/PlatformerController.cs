@@ -310,6 +310,10 @@ public class PlatformerController : RigidBodyController {
             mJumpingWall = false;
         }
 
+        //see if we are jumping wall and falling, then cancel jumpwall
+        if(mJumpingWall && localVelocity.y < 0.0f)
+            mJumpingWall = false;
+
         //set eye rotation
         if(_eye != null && mEyeLocked && !mEyeOrienting) {
             Quaternion rot = dirHolder.rotation;
@@ -371,7 +375,7 @@ public class PlatformerController : RigidBodyController {
                     mJumpingWall = true;
                     mJump = true;
                     mJumpLastTime = Time.fixedTime;
-                    mJumpCounter = 1;
+                    mJumpCounter = jumpCounter;
                 }
                 else if((mJumpCounter == 0 && isGrounded) || (mJumpCounter > 0 && mJumpCounter < jumpCounter)) {
                     if(jumpImpulse > 0.0f) {

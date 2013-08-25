@@ -5,15 +5,29 @@ public class PlayerController : MonoBehaviour {
     public Transform attachPoint;
     public tk2dSpriteAnimator attachSpriteAnim;
     public AnimatorData attachAnimator;
+
     public GameObject bomb;
+    //public float bombTimeRegen = 3.0f;
 
     public float throwAngle = 30;
+    public float throwImpulse = 30;
+
+    public float dropAngle = 60;
+    public float dropImpulse = -20;
+
+    public float hurtImpulse = 3.0f;
+    public float hurtInvulDelay = 2.0f;
 
     public SpriteColorBlink[] spriteBlinks;
 
     private Player mPlayer;
     private PlatformerController mBody;
     private PlatformerSpriteController mBodySpriteCtrl;
+    private BombController mBombCtrl;
+
+    private HUD mHUD;
+
+    private GameObject mTargetGO; //goal
 
     private bool mInputEnabled = false;
 
@@ -40,36 +54,89 @@ public class PlayerController : MonoBehaviour {
 
     public PlatformerController body { get { return mBody; } }
 
-    public void Throw(float impulse) {
+    public bool hasAttach { get { return attachPoint.gameObject.activeSelf; } }
+
+    public Player player { get { return mPlayer; } }
+
+    void DoThrow(float impulse, float angle) {
+        attachPoint.gameObject.SetActive(false);
+        mBody.ResetCollision();
+
         attachSpriteAnim.Play("empty");
 
         bomb.transform.position = attachPoint.position;
         bomb.transform.rotation = attachPoint.rotation;
-        bomb.rigidbody.velocity = Vector3.zero;
+        bomb.rigidbody.angularVelocity = Vector3.zero;
+
+        bomb.rigidbody.velocity = mBody.rigidbody.velocity;
 
         bomb.SetActive(true);
+        mBombCtrl.Activate();
 
-        Vector3 dir = mBodySpriteCtrl.isLeft ? -mBody.dirHolder.right : mBody.dirHolder.right;
+        if(impulse != 0.0f) {
+            Vector3 dir = mBodySpriteCtrl.isLeft ? -mBody.dirHolder.right : mBody.dirHolder.right;
 
-        Quaternion rot = Quaternion.AngleAxis(throwAngle, mBodySpriteCtrl.isLeft ? -Vector3.forward : Vector3.forward);
+            Quaternion rot = Quaternion.AngleAxis(angle, mBodySpriteCtrl.isLeft ? -Vector3.forward : Vector3.forward);
 
-        dir = rot * dir;
-                
-        bomb.rigidbody.AddForce(dir * impulse, ForceMode.Impulse);
+            dir = rot * dir;
+
+            bomb.rigidbody.AddForce(dir * impulse, ForceMode.Impulse);
+        }
 
         GravityController bombGrav = bomb.GetComponent<GravityController>();
         bombGrav.up = mBody.gravityController.up;
+
+        tk2dBaseSprite bombSpr = bomb.GetComponentInChildren<tk2dBaseSprite>();
+        if(bombSpr)
+            bombSpr.FlipX = mBodySpriteCtrl.isLeft;
+
+        mHUD.targetOffScreen.gameObject.SetActive(false);
+    }
+
+    public void ThrowAttach() {
+        DoThrow(throwImpulse, throwAngle);
+    }
+
+    public void DropAttach() {
+        if(hasAttach)
+            DoThrow(dropImpulse, dropAngle);
     }
 
     public void BombActive() {
+        if(attachPoint)
+            attachPoint.gameObject.SetActive(true);
+
+        if(mBody)
+            mBody.ResetCollision();
+
         if(bomb)
             bomb.SetActive(false);
 
         if(attachSpriteAnim)
             attachSpriteAnim.Play("bomb");
+
+
+        mHUD.targetOffScreen.gameObject.SetActive(true);
+    }
+
+    public bool Hurt(Vector3 dir, bool forceBounce) {
+        if(!mPlayer.isBlinking && mPlayer.state != (int)Player.State.Hurt) {
+            mPlayer.state = (int)Player.State.Hurt;
+
+            mBody.rigidbody.AddForce(dir * hurtImpulse, ForceMode.Impulse);
+
+            return true;
+        }
+        else if(forceBounce)
+            mBody.rigidbody.AddForce(dir * hurtImpulse, ForceMode.Impulse);
+
+        return false;
     }
 
     void ResetData() {
+        if(attachPoint)
+            attachPoint.gameObject.SetActive(true);
+
         foreach(SpriteColorBlink blink in spriteBlinks) {
             if(blink)
                 blink.enabled = false;
@@ -80,8 +147,22 @@ public class PlayerController : MonoBehaviour {
             attachAnimator.Stop();
         }
 
+        if(mBody)
+            mBody.ResetCollision();
+
         if(mBodySpriteCtrl)
             mBodySpriteCtrl.ResetAnimation();
+
+        if(attachSpriteAnim)
+            attachSpriteAnim.Sprite.FlipX = false;
+
+        if(mBombCtrl)
+            mBombCtrl.Init();
+
+        if(mHUD) {
+            if(mHUD.targetOffScreen)
+                mHUD.targetOffScreen.gameObject.SetActive(false);
+        }
     }
 
     void OnDestroy() {
@@ -101,26 +182,43 @@ public class PlayerController : MonoBehaviour {
         mBody.moveInputY = InputAction.MoveY;
         mBody.jumpInput = InputAction.Jump;
 
+        mBody.collisionStayCallback += OnBodyCollisionStay;
+
         mBodySpriteCtrl = mBody.GetComponent<PlatformerSpriteController>();
         mBodySpriteCtrl.flipCallback += OnFlipCallback;
+        mBodySpriteCtrl.anim.AnimationCompleted += OnBodySpriteAnimFinish;
+
+        mBombCtrl = bomb.GetComponent<BombController>();
+
+        mTargetGO = GameObject.FindGameObjectWithTag("Goal");
+
+        mHUD = HUD.GetHUD();
+        mHUD.targetOffScreen.SetPOI(mTargetGO.transform);
 
         ResetData();
     }
 
     // Use this for initialization
     void Start() {
-        inputEnabled = true;
+
     }
 
     // Update is called once per frame
     void Update() {
+        /*if(hasAttach && mBombCtrl.curDelay < mBombCtrl.deathDelay) {
+            mBombCtrl.curDelay += bombTimeRegen * Time.deltaTime;
+        }*/
 
+        if(mPlayer.isGoal) {
+            if(mHUD.targetOffScreen.gameObject.activeSelf)
+                mHUD.targetOffScreen.gameObject.SetActive(false);
+        }
     }
 
     void OnInputAction(InputManager.Info dat) {
         if(dat.state == InputManager.State.Pressed) {
-            if(!bomb.activeSelf && !attachAnimator.isPlaying) {
-                attachAnimator.Play("throw");
+            if(hasAttach && !attachAnimator.isPlaying) {
+                attachAnimator.Play(mBodySpriteCtrl.isLeft ? "throwLeft" : "throw");
             }
         }
     }
@@ -133,16 +231,27 @@ public class PlayerController : MonoBehaviour {
         switch((Player.State)state) {
             case Player.State.Normal:
                 mBodySpriteCtrl.animationActive = true;
-
-                
+                inputEnabled = true;
                 break;
 
             case Player.State.Hurt:
                 attachAnimator.Stop();
+
+                mBodySpriteCtrl.animationActive = false;
+                mBody.inputEnabled = false;
+
+                mBodySpriteCtrl.anim.Play("hurt");
+
+                mPlayer.Blink(hurtInvulDelay);
+
+                DropAttach();
                 break;
 
             case Player.State.Dead:
                 attachAnimator.Stop();
+
+                mBodySpriteCtrl.animationActive = false;
+                mBody.inputEnabled = false;
                 break;
 
             case Player.State.Invalid:
@@ -152,9 +261,24 @@ public class PlayerController : MonoBehaviour {
     }
 
     void OnPlayerBlink(EntityBase ent, bool b) {
+        foreach(SpriteColorBlink blink in spriteBlinks)
+            blink.enabled = b;
+
+        if(!b) {
+            mPlayer.state = (int)Player.State.Normal;
+        }
     }
 
     void OnFlipCallback(PlatformerSpriteController ctrl) {
+        attachSpriteAnim.Sprite.FlipX = ctrl.isLeft;
+
+        if(attachAnimator.isPlaying) {
+            float t = attachAnimator.currentPlayingTake.sequence.elapsed;
+            attachAnimator.Stop();
+            attachAnimator.PlayAtTime(mBodySpriteCtrl.isLeft ? "throwLeft" : "throw", t);
+        }
+
+
         Transform attach = attachAnimator.transform;
 
         Vector3 s = attach.localScale;
@@ -162,5 +286,31 @@ public class PlayerController : MonoBehaviour {
         s.x = ctrl.isLeft ? -Mathf.Abs(s.x) : Mathf.Abs(s.x);
 
         attach.localScale = s;
+    }
+
+    void OnBodyCollisionStay(RigidBodyController controller, Collision col) {
+        //Debug.Log("hi");
+        foreach(ContactPoint cp in col.contacts) {
+            if(cp.otherCollider.gameObject.tag == "Harm") {
+                Hurt(cp.normal, false);
+            }
+            else if(cp.otherCollider.gameObject == bomb) {
+                //pick up bomb again
+                //can't if we are hurt, bomb dropped at goal, currently animating for some reason.
+                if(!mPlayer.isGoal && (mBodySpriteCtrl.anim.CurrentClip == null || mBodySpriteCtrl.anim.CurrentClip.name != "hurt") && !attachAnimator.isPlaying)
+                    BombActive();
+            }
+        }
+    }
+
+    void OnBodySpriteAnimFinish(tk2dSpriteAnimator anim, tk2dSpriteAnimationClip clip) {
+        if(clip.name == "hurt") {
+            mBodySpriteCtrl.animationActive = true;
+            mBody.inputEnabled = inputEnabled;
+        }
+    }
+
+    void OnBombDeathCallback(BombController ctrl) {
+        mPlayer.state = (int)Player.State.Dead;
     }
 }
