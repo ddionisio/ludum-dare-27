@@ -10,15 +10,15 @@ public class Player : EntityBase {
         Victory
     }
 
-    public string gameoverScene;
-
-
-
+    public string gameoverScene = "gameover";
+        
     private static Player mInstance;
 
     private bool mIsGoal;
     private PlayerController mCtrl;
     private string mExitScene;
+
+    private M8.ImageEffects.WaveRGB mGameOverFX;
 
     public static Player instance { get { return mInstance; } }
 
@@ -27,6 +27,12 @@ public class Player : EntityBase {
     public bool isGoal { get { return mIsGoal; } set { mIsGoal = value; } }
 
     protected override void StateChanged() {
+        switch((State)state) {
+            case State.Invalid:
+                if(mGameOverFX)
+                    mGameOverFX.enabled = false;
+                break;
+        }
     }
 
     protected override void OnDespawned() {
@@ -46,8 +52,13 @@ public class Player : EntityBase {
         base.OnDestroy();
     }
 
+    public void GameOver() {
+        StartCoroutine(GameOverDelay());
+    }
+
     public void ExitToScene(string scene) {
         mExitScene = scene;
+        Main.instance.sceneManager.LoadScene(scene);
         //start the exit animation
     }
 
@@ -71,6 +82,8 @@ public class Player : EntityBase {
     protected override void Awake() {
         if(mInstance == null) {
             mInstance = this;
+
+            mGameOverFX = Camera.main.GetComponent<M8.ImageEffects.WaveRGB>();
 
             mCtrl = GetComponent<PlayerController>();
 
@@ -102,5 +115,14 @@ public class Player : EntityBase {
                 UIModalManager.instance.ModalOpen("pause");
             }
         }
+    }
+
+    IEnumerator GameOverDelay() {
+        if(mGameOverFX)
+            mGameOverFX.enabled = true;
+
+        yield return new WaitForSeconds(2.0f);
+
+        Main.instance.sceneManager.LoadScene(gameoverScene);
     }
 }

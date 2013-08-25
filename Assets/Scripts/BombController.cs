@@ -80,7 +80,7 @@ public class BombController : MonoBehaviour {
                 countLabel = mHUD.bombOffScreenLabel;
         }
 
-        countLabel.text = Mathf.RoundToInt(mCurDelay).ToString();
+        countLabel.text = Mathf.CeilToInt(mCurDelay).ToString();
 
         if(mCurDelay > 0.0f) {
             mCurDelay = Mathf.Clamp(mCurDelay - Time.deltaTime, 0.0f, deathDelay);

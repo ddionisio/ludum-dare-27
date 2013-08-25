@@ -1,15 +1,22 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class ModalVictory : MonoBehaviour {
+public class ModalVictory : UIController {
 
-	// Use this for initialization
-	void Start () {
-	
-	}
-	
-	// Update is called once per frame
-	void Update () {
-	
-	}
+    protected override void OnActive(bool active) {
+        if(active) {
+        }
+        else {
+        }
+    }
+
+    protected override void OnOpen() {
+    }
+
+    protected override void OnClose() {
+    }
+
+    void OnClick() {
+        Main.instance.sceneManager.LoadScene("levelSelect");
+    }
 }

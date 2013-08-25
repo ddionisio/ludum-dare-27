@@ -318,7 +318,7 @@ public class PlayerController : MonoBehaviour {
 
     void OnBombDeathCallback(BombController ctrl) {
         mPlayer.state = (int)Player.State.Dead;
-        mPlayer.ExitToScene(mPlayer.gameoverScene);
+        mPlayer.GameOver();
     }
 
     void OnUIModalActive() {

@@ -375,7 +375,7 @@ public class PlatformerController : RigidBodyController {
                     mJumpingWall = true;
                     mJump = true;
                     mJumpLastTime = Time.fixedTime;
-                    mJumpCounter = jumpCounter;
+                    mJumpCounter = 1;// jumpCounter;
                 }
                 else if((mJumpCounter == 0 && isGrounded) || (mJumpCounter > 0 && mJumpCounter < jumpCounter)) {
                     if(jumpImpulse > 0.0f) {
