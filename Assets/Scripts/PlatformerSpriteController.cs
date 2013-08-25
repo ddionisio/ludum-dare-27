@@ -73,8 +73,20 @@ public class PlatformerSpriteController : MonoBehaviour {
             }
         }
 
-        if(controller.localVelocity.x != 0.0f) {
+        if(controller.isJumpWall) {
             bool left = controller.localVelocity.x < 0.0f;
+
+            if(mIsLeft != left) {
+                mIsLeft = left;
+
+                anim.Sprite.FlipX = mIsLeft;
+
+                if(flipCallback != null)
+                    flipCallback(this);
+            }
+        }
+        else if(controller.moveSide != 0.0f) {
+            bool left = controller.moveSide < 0.0f;
 
             if(mIsLeft != left) {
                 mIsLeft = left;

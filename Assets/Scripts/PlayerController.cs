@@ -312,7 +312,7 @@ public class PlayerController : MonoBehaviour {
     void OnBodySpriteAnimFinish(tk2dSpriteAnimator anim, tk2dSpriteAnimationClip clip) {
         if(clip.name == "hurt") {
             mBodySpriteCtrl.animationActive = true;
-            mBody.inputEnabled = inputEnabled;
+            mBody.inputEnabled = true;
         }
     }
 

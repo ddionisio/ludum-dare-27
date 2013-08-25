@@ -98,6 +98,8 @@ public class PlatformerController : RigidBodyController {
         }
     }
 
+    public bool isJumpWall { get { return mJumpingWall; } }
+
     public override void ResetCollision() {
         base.ResetCollision();
 
@@ -214,7 +216,7 @@ public class PlatformerController : RigidBodyController {
 
     protected override void RefreshCollInfo() {
         base.RefreshCollInfo();
-                
+
         if(isSlopSlide) {
             //Debug.Log("sliding");
             mLastGround = false;
@@ -365,7 +367,7 @@ public class PlatformerController : RigidBodyController {
 
                     if(jumpImpulse > 0.0f) {
                         PrepJumpVel();
-                                                
+
                         rigidbody.AddForce(jumpDir * jumpImpulse, ForceMode.Impulse);
                     }
 
@@ -375,12 +377,12 @@ public class PlatformerController : RigidBodyController {
                     mJumpingWall = true;
                     mJump = true;
                     mJumpLastTime = Time.fixedTime;
-                    mJumpCounter = 1;// jumpCounter;
+                    mJumpCounter = Mathf.Clamp(mJumpCounter + 1, 0, jumpCounter);
                 }
                 else if((mJumpCounter == 0 && isGrounded) || (mJumpCounter > 0 && mJumpCounter < jumpCounter)) {
                     if(jumpImpulse > 0.0f) {
                         PrepJumpVel();
-                                                
+
                         rigidbody.AddForce(dirHolder.up * (isGrounded ? jumpImpulse : jumpAirImpulse), ForceMode.Impulse);
                     }
 
