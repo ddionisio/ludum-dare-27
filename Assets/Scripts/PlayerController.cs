@@ -189,6 +189,7 @@ public class PlayerController : MonoBehaviour {
         mBodySpriteCtrl.anim.AnimationCompleted += OnBodySpriteAnimFinish;
 
         mBombCtrl = bomb.GetComponent<BombController>();
+        mBombCtrl.deathCallback += OnBombDeathCallback;
 
         mTargetGO = GameObject.FindGameObjectWithTag("Goal");
 
@@ -247,7 +248,10 @@ public class PlayerController : MonoBehaviour {
                 DropAttach();
                 break;
 
+            case Player.State.Victory:
             case Player.State.Dead:
+                //TODO: animation?
+
                 attachAnimator.Stop();
 
                 mBodySpriteCtrl.animationActive = false;
@@ -312,5 +316,6 @@ public class PlayerController : MonoBehaviour {
 
     void OnBombDeathCallback(BombController ctrl) {
         mPlayer.state = (int)Player.State.Dead;
+        mPlayer.ExitToScene(mPlayer.gameoverScene);
     }
 }

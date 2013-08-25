@@ -2,14 +2,16 @@
 using System.Collections;
 
 public class VictoryTrigger : MonoBehaviour {
+    public string victoryScene;
+    public string levelSaveKey;
 
-	// Use this for initialization
-	void Start () {
-	
-	}
-	
-	// Update is called once per frame
-	void Update () {
-	
-	}
+    void OnTriggerEnter(Collider col) {
+        Player player = Player.instance;
+
+        if(player.isGoal && col == player.controller.body.collider) {
+            player.ExitToScene(victoryScene);
+        }
+
+        UserData.instance.SetInt(levelSaveKey, 1);
+    }
 }

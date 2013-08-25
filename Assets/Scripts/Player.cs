@@ -6,13 +6,19 @@ public class Player : EntityBase {
         Invalid = -1,
         Normal,
         Hurt,
-        Dead
+        Dead,
+        Victory
     }
+
+    public string gameoverScene;
+
+
 
     private static Player mInstance;
 
     private bool mIsGoal;
     private PlayerController mCtrl;
+    private string mExitScene;
 
     public static Player instance { get { return mInstance; } }
 
@@ -36,6 +42,11 @@ public class Player : EntityBase {
         //dealloc here
 
         base.OnDestroy();
+    }
+
+    public void ExitToScene(string scene) {
+        mExitScene = scene;
+        //start the exit animation
     }
 
     public override void Release() {
