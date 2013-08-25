@@ -239,7 +239,7 @@ public class PlayerController : MonoBehaviour {
                 attachAnimator.Stop();
 
                 mBodySpriteCtrl.animationActive = false;
-                mBody.inputEnabled = false;
+                inputEnabled = false;
 
                 mBodySpriteCtrl.anim.Play("hurt");
 
@@ -255,10 +255,12 @@ public class PlayerController : MonoBehaviour {
                 attachAnimator.Stop();
 
                 mBodySpriteCtrl.animationActive = false;
-                mBody.inputEnabled = false;
+                inputEnabled = false;
                 break;
 
             case Player.State.Invalid:
+                inputEnabled = false;
+
                 ResetData();
                 break;
         }
@@ -317,5 +319,15 @@ public class PlayerController : MonoBehaviour {
     void OnBombDeathCallback(BombController ctrl) {
         mPlayer.state = (int)Player.State.Dead;
         mPlayer.ExitToScene(mPlayer.gameoverScene);
+    }
+
+    void OnUIModalActive() {
+        inputEnabled = false;
+    }
+
+    void OnUIModalInactive() {
+        if(mPlayer.state == (int)Player.State.Normal) {
+            inputEnabled = true;
+        }
     }
 }

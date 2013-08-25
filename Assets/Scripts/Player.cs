@@ -41,6 +41,8 @@ public class Player : EntityBase {
 
         //dealloc here
 
+        RemoveInput();
+
         base.OnDestroy();
     }
 
@@ -86,5 +88,19 @@ public class Player : EntityBase {
         base.Start();
 
         //initialize variables from other sources (for communicating with managers, etc.)
+        Main.instance.input.AddButtonCall(0, InputAction.MenuEscape, OnInputMenu);
+    }
+
+    void RemoveInput() {
+        if(Main.instance && Main.instance.input)
+            Main.instance.input.RemoveButtonCall(0, InputAction.MenuEscape, OnInputMenu);
+    }
+
+    void OnInputMenu(InputManager.Info dat) {
+        if(dat.state == InputManager.State.Pressed) {
+            if(!UIModalManager.instance.ModalIsInStack("pause")) {
+                UIModalManager.instance.ModalOpen("pause");
+            }
+        }
     }
 }
