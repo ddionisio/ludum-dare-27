@@ -31,6 +31,8 @@ public class PlayerController : MonoBehaviour {
 
     private bool mInputEnabled = false;
 
+    private bool mBombCorrection;
+
     public bool inputEnabled {
         get { return mInputEnabled; }
         set {
@@ -83,14 +85,29 @@ public class PlayerController : MonoBehaviour {
             bomb.rigidbody.AddForce(dir * impulse, ForceMode.Impulse);
         }
 
+        if(!mBombCorrection) {
+            StartCoroutine(DoBombCorrection());
+        }
+
         GravityController bombGrav = bomb.GetComponent<GravityController>();
         bombGrav.up = mBody.gravityController.up;
-
+        
         tk2dBaseSprite bombSpr = bomb.GetComponentInChildren<tk2dBaseSprite>();
         if(bombSpr)
             bombSpr.FlipX = mBodySpriteCtrl.isLeft;
 
         mHUD.targetOffScreen.gameObject.SetActive(false);
+    }
+
+    IEnumerator DoBombCorrection() {
+        yield return new WaitForSeconds(0.15f);
+
+        if(bomb) {
+            GravityController bombGrav = bomb.GetComponent<GravityController>();
+            bombGrav.up = mBody.gravityController.up;
+        }
+
+        mBombCorrection = false;
     }
 
     public void ThrowAttach() {
@@ -124,6 +141,9 @@ public class PlayerController : MonoBehaviour {
             mPlayer.state = (int)Player.State.Hurt;
 
             mBody.rigidbody.AddForce(dir * hurtImpulse, ForceMode.Impulse);
+
+            //TODO: remove me
+            SoundPlayerGlobal.instance.Play("hurt");
 
             return true;
         }
@@ -163,6 +183,8 @@ public class PlayerController : MonoBehaviour {
             if(mHUD.targetOffScreen)
                 mHUD.targetOffScreen.gameObject.SetActive(false);
         }
+
+        mBombCorrection = false;
     }
 
     void OnDestroy() {

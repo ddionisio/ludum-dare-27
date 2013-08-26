@@ -83,7 +83,7 @@ public class BombController : MonoBehaviour {
         countLabel.text = Mathf.CeilToInt(mCurDelay).ToString();
 
         if(mCurDelay > 0.0f) {
-            mCurDelay = Mathf.Clamp(mCurDelay - Time.deltaTime, 0.0f, deathDelay);
+            mCurDelay = Mathf.Clamp(mCurDelay - Time.deltaTime*0.7f, 0.0f, deathDelay);
                         
             if(mCurDelay <= 0.0f && deathCallback != null)
                 deathCallback(this);

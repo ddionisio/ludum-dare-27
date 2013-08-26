@@ -17,6 +17,12 @@ public class ModalVictory : UIController {
     }
 
     void OnClick() {
-        Main.instance.sceneManager.LoadScene("levelSelect");
+        int complete = SceneState.instance.GetGlobalValue("numLevelComplete");
+        int max = SceneState.instance.GetGlobalValue("numLevels");
+
+        if(complete < max)
+            Main.instance.sceneManager.LoadScene("levelSelect");
+        else
+            Main.instance.sceneManager.LoadScene("ending");
     }
 }

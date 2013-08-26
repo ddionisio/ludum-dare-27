@@ -7,9 +7,16 @@ public class BombDropOffTrigger : MonoBehaviour {
     void OnTriggerEnter(Collider col) {
         if(col.gameObject.tag == "Bomb") {
             Player player = Player.instance;
+
+            bool prevGoal = player.isGoal;
+
             player.isGoal = true;
 
             anim.Play("active");
+
+            if(!prevGoal) {
+                SoundPlayerGlobal.instance.Play("goal");
+            }
         }
     }
 }

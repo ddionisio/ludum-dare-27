@@ -378,6 +378,9 @@ public class PlatformerController : RigidBodyController {
                     mJump = true;
                     mJumpLastTime = Time.fixedTime;
                     mJumpCounter = Mathf.Clamp(mJumpCounter + 1, 0, jumpCounter);
+
+                    //TODO: remove me
+                    SoundPlayerGlobal.instance.Play("jump");
                 }
                 else if((mJumpCounter == 0 && isGrounded) || (mJumpCounter > 0 && mJumpCounter < jumpCounter)) {
                     if(jumpImpulse > 0.0f) {
@@ -393,6 +396,9 @@ public class PlatformerController : RigidBodyController {
                     mJumpingWall = false;
                     mJump = true;
                     mJumpLastTime = Time.fixedTime;
+
+                    //TODO: remove me
+                    SoundPlayerGlobal.instance.Play("jump");
                 }
             }
         }

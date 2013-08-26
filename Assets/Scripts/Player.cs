@@ -118,6 +118,8 @@ public class Player : EntityBase {
     }
 
     IEnumerator GameOverDelay() {
+        SoundPlayerGlobal.instance.Play("explode");
+
         if(mGameOverFX)
             mGameOverFX.enabled = true;
 
