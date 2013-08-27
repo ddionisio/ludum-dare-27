@@ -1,0 +1,69 @@
+Initialize engine version: 4.2.0f4 (38efbd14869d)
+GfxDevice: creating device client; threaded=1
+Direct3D:
+    Version:  Direct3D 9.0c [nvd3dum.dll 9.18.13.2641]
+    Renderer: NVIDIA GeForce GTX 580
+    Vendor:   NVIDIA
+    VRAM:     1488 MB (via DXGI)
+    Caps:     Shader=30 DepthRT=1 NativeDepth=1 NativeShadow=1 DF16=0 DF24=0 INTZ=1 RAWZ=0 NULL=1 RESZ=0 SlowINTZ=0
+Begin MonoManager ReloadAssembly
+Platform assembly: C:\Lab\ludum-dare-27\Window-Build\GitGirl_Data\Managed\UnityEngine.dll (this message is harmless)
+Loading C:\Lab\ludum-dare-27\Window-Build\GitGirl_Data\Managed\UnityEngine.dll into Unity Child Domain
+Platform assembly: C:\Lab\ludum-dare-27\Window-Build\GitGirl_Data\Managed\Assembly-CSharp.dll (this message is harmless)
+Loading C:\Lab\ludum-dare-27\Window-Build\GitGirl_Data\Managed\Assembly-CSharp.dll into Unity Child Domain
+Platform assembly: C:\Lab\ludum-dare-27\Window-Build\GitGirl_Data\Managed\ProBuilderCore.dll (this message is harmless)
+Loading C:\Lab\ludum-dare-27\Window-Build\GitGirl_Data\Managed\ProBuilderCore.dll into Unity Child Domain
+Platform assembly: C:\Lab\ludum-dare-27\Window-Build\GitGirl_Data\Managed\SixBySeven.dll (this message is harmless)
+Loading C:\Lab\ludum-dare-27\Window-Build\GitGirl_Data\Managed\SixBySeven.dll into Unity Child Domain
+Platform assembly: C:\Lab\ludum-dare-27\Window-Build\GitGirl_Data\Managed\HOTween.dll (this message is harmless)
+Loading C:\Lab\ludum-dare-27\Window-Build\GitGirl_Data\Managed\HOTween.dll into Unity Child Domain
+Platform assembly: C:\Lab\ludum-dare-27\Window-Build\GitGirl_Data\Managed\PlayMaker.dll (this message is harmless)
+Loading C:\Lab\ludum-dare-27\Window-Build\GitGirl_Data\Managed\PlayMaker.dll into Unity Child Domain
+- Completed reload, in  0.069 seconds
+desktop: 1680x1050 60Hz; virtual: 3360x1050 at 0,0
+<RI> Initializing input.
+<RI> Input initialized.
+Platform assembly: C:\Lab\ludum-dare-27\Window-Build\GitGirl_Data\Managed\System.Core.dll (this message is harmless)
+Platform assembly: C:\Lab\ludum-dare-27\Window-Build\GitGirl_Data\Managed\System.dll (this message is harmless)
+UnloadTime: 0.274161 ms
+Unloading 3 Unused Serialized files (Serialized files now loaded: 0 / Dirty serialized files: 0)
+
+Unloading 2 unused Assets to reduce memory usage. Loaded Objects now: 1490.
+Total: 1.208393 ms (FindLiveObjects: 0.044966 ms CreateObjectMapping: 0.027852 ms MarkObjects: 0.442283 ms  DeleteObjects: 0.007382 ms)
+
+UnloadTime: 1.821818 ms
+Unloading 2 Unused Serialized files (Serialized files now loaded: 0 / Dirty serialized files: 0)
+
+Unloading 11 unused Assets to reduce memory usage. Loaded Objects now: 1474.
+Total: 1.192285 ms (FindLiveObjects: 0.042617 ms CreateObjectMapping: 0.029865 ms MarkObjects: 0.427518 ms  DeleteObjects: 0.027181 ms)
+
+UnloadTime: 0.444967 ms
+Unloading 3 Unused Serialized files (Serialized files now loaded: 0 / Dirty serialized files: 0)
+
+Unloading 2 unused Assets to reduce memory usage. Loaded Objects now: 2080.
+Total: 1.611079 ms (FindLiveObjects: 0.069127 ms CreateObjectMapping: 0.029865 ms MarkObjects: 0.732217 ms  DeleteObjects: 0.114429 ms)
+
+UnloadTime: 5.083909 ms
+Unloading 2 Unused Serialized files (Serialized files now loaded: 0 / Dirty serialized files: 0)
+
+Unloading 30 unused Assets to reduce memory usage. Loaded Objects now: 1427.
+Total: 1.369467 ms (FindLiveObjects: 0.036241 ms CreateObjectMapping: 0.024832 ms MarkObjects: 0.459733 ms  DeleteObjects: 0.197651 ms)
+
+UnloadTime: 1.060741 ms
+Unloading 2 Unused Serialized files (Serialized files now loaded: 0 / Dirty serialized files: 0)
+
+Unloading 29 unused Assets to reduce memory usage. Loaded Objects now: 1493.
+Total: 4.545317 ms (FindLiveObjects: 0.041610 ms CreateObjectMapping: 0.025839 ms MarkObjects: 0.425504 ms  DeleteObjects: 3.408736 ms)
+
+UnloadTime: 0.569800 ms
+Unloading 2 Unused Serialized files (Serialized files now loaded: 0 / Dirty serialized files: 0)
+
+Unloading 12 unused Assets to reduce memory usage. Loaded Objects now: 1498.
+Total: 5.102366 ms (FindLiveObjects: 0.044295 ms CreateObjectMapping: 0.027516 ms MarkObjects: 0.503021 ms  DeleteObjects: 3.885583 ms)
+
+UnloadTime: 0.455370 ms
+Unloading 1 Unused Serialized files (Serialized files now loaded: 0 / Dirty serialized files: 0)
+
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 1544.
+Total: 1.256380 ms (FindLiveObjects: 0.040268 ms CreateObjectMapping: 0.027852 ms MarkObjects: 0.530538 ms  DeleteObjects: 0.006375 ms)
+

@@ -31,8 +31,6 @@ public class PlayerController : MonoBehaviour {
 
     private bool mInputEnabled = false;
 
-    private bool mBombCorrection;
-
     public bool inputEnabled {
         get { return mInputEnabled; }
         set {
@@ -85,13 +83,9 @@ public class PlayerController : MonoBehaviour {
             bomb.rigidbody.AddForce(dir * impulse, ForceMode.Impulse);
         }
 
-        if(!mBombCorrection) {
-            StartCoroutine(DoBombCorrection());
-        }
+        StopCoroutine("DoBombCorrection");
+        StartCoroutine(DoBombCorrection(mBody.gravityController.up));
 
-        GravityController bombGrav = bomb.GetComponent<GravityController>();
-        bombGrav.up = mBody.gravityController.up;
-        
         tk2dBaseSprite bombSpr = bomb.GetComponentInChildren<tk2dBaseSprite>();
         if(bombSpr)
             bombSpr.FlipX = mBodySpriteCtrl.isLeft;
@@ -99,15 +93,13 @@ public class PlayerController : MonoBehaviour {
         mHUD.targetOffScreen.gameObject.SetActive(false);
     }
 
-    IEnumerator DoBombCorrection() {
-        yield return new WaitForSeconds(0.15f);
+    IEnumerator DoBombCorrection(Vector3 up) {
+        yield return new WaitForFixedUpdate();
 
         if(bomb) {
             GravityController bombGrav = bomb.GetComponent<GravityController>();
-            bombGrav.up = mBody.gravityController.up;
+            bombGrav.up = up;
         }
-
-        mBombCorrection = false;
     }
 
     public void ThrowAttach() {
@@ -184,7 +176,6 @@ public class PlayerController : MonoBehaviour {
                 mHUD.targetOffScreen.gameObject.SetActive(false);
         }
 
-        mBombCorrection = false;
     }
 
     void OnDestroy() {

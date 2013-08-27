@@ -13,6 +13,7 @@ public class PlatformerController : RigidBodyController {
 
     public int jumpCounter = 1;
     public float jumpAirImpulse = 2.5f;
+    public float jumpWallImpulse = 5.0f;
     public float jumpImpulse = 5.0f;
     public float jumpWaterForce = 5.0f;
     public float jumpForce = 50.0f;
@@ -116,6 +117,8 @@ public class PlatformerController : RigidBodyController {
         mJump = false;
         mJumpCounter = 0;
         mJumpingWall = false;
+
+        lockDrag = false;
     }
 
     protected override void WaterEnter() {
@@ -296,8 +299,9 @@ public class PlatformerController : RigidBodyController {
                     body.AddForce(dirRot * Vector3.up * jumpWaterForce);
                 }
                 else {
-                    if(Time.fixedTime - mJumpLastTime >= jumpDelay || (collisionFlags & CollisionFlags.Above) != 0) {
+                    if(Time.fixedTime - mJumpLastTime >= jumpDelay || collisionFlags == CollisionFlags.Above) {
                         mJump = false;
+                        lockDrag = false;
                     }
                     else {
                         body.AddForce(dirRot * Vector3.up * jumpForce);
@@ -310,6 +314,8 @@ public class PlatformerController : RigidBodyController {
             moveSide = 0.0f;
             mJump = false;
             mJumpingWall = false;
+
+            lockDrag = false;
         }
 
         //see if we are jumping wall and falling, then cancel jumpwall
@@ -350,47 +356,41 @@ public class PlatformerController : RigidBodyController {
                 mJump = true;
                 mJumpCounter = 0;
             }
-            else if(!isSlopSlide) {
-                if(jumpWall && collisionFlags == CollisionFlags.Sides) {
-                    CollideInfo inf = new CollideInfo();
+            else if(jumpWall && (collisionFlags == CollisionFlags.Sides || isSlopSlide)) {
+                CollideInfo inf = new CollideInfo();
 
-                    foreach(KeyValuePair<Collider, CollideInfo> pair in mColls) {
-                        if(pair.Value.flag == CollisionFlags.Sides) {
-                            inf = pair.Value;
-                            break;
-                        }
+                foreach(KeyValuePair<Collider, CollideInfo> pair in mColls) {
+                    if(pair.Value.flag == CollisionFlags.Sides) {
+                        inf = pair.Value;
+                        break;
                     }
-
-                    rigidbody.velocity = Vector3.zero;
-
-                    Vector3 jumpDir = inf.normal + dirHolder.up;
-
-                    if(jumpImpulse > 0.0f) {
-                        PrepJumpVel();
-
-                        rigidbody.AddForce(jumpDir * jumpImpulse, ForceMode.Impulse);
-                    }
-
-                    ClearCollFlags();
-                    rigidbody.drag = airDrag;
-
-                    mJumpingWall = true;
-                    mJump = true;
-                    mJumpLastTime = Time.fixedTime;
-                    mJumpCounter = Mathf.Clamp(mJumpCounter + 1, 0, jumpCounter);
-
-                    //TODO: remove me
-                    SoundPlayerGlobal.instance.Play("jump");
                 }
-                else if((mJumpCounter == 0 && isGrounded) || (mJumpCounter > 0 && mJumpCounter < jumpCounter)) {
-                    if(jumpImpulse > 0.0f) {
-                        PrepJumpVel();
 
-                        rigidbody.AddForce(dirHolder.up * (isGrounded ? jumpImpulse : jumpAirImpulse), ForceMode.Impulse);
-                    }
+                rigidbody.velocity = Vector3.zero;
+                lockDrag = true;
+                rigidbody.drag = airDrag;
 
-                    ClearCollFlags();
+                Vector3 impulse = inf.normal * jumpWallImpulse;
+                impulse += dirHolder.up * jumpImpulse;
+
+                PrepJumpVel();
+                rigidbody.AddForce(impulse, ForceMode.Impulse);
+
+                mJumpingWall = true;
+                mJump = true;
+                mJumpLastTime = Time.fixedTime;
+                mJumpCounter = Mathf.Clamp(mJumpCounter + 1, 0, jumpCounter);
+
+                //TODO: remove me
+                SoundPlayerGlobal.instance.Play("jump");
+            }
+            else if(!isSlopSlide) {
+                if((mJumpCounter == 0 && isGrounded) || (mJumpCounter > 0 && mJumpCounter < jumpCounter)) {
+                    lockDrag = true;
                     rigidbody.drag = airDrag;
+
+                    PrepJumpVel();
+                    rigidbody.AddForce(dirHolder.up * (isGrounded ? jumpImpulse : jumpAirImpulse), ForceMode.Impulse);
 
                     mJumpCounter++;
                     mJumpingWall = false;
@@ -403,6 +403,7 @@ public class PlatformerController : RigidBodyController {
             }
         }
         else if(dat.state == InputManager.State.Released) {
+            lockDrag = false;
             mJump = false;
         }
     }
