@@ -11,6 +11,10 @@ public class PlatformerSpriteController : MonoBehaviour {
     public string moveClip = "move";
     public string upClip = "up";
     public string downClip = "down";
+    public string wallStickClip = "wall";
+    public string wallJumpClip = "wallJump";
+
+    public ParticleSystem wallStickParticle;
 
     public event Callback flipCallback;
 
@@ -18,6 +22,8 @@ public class PlatformerSpriteController : MonoBehaviour {
     private tk2dSpriteAnimationClip mMove;
     private tk2dSpriteAnimationClip mUp;
     private tk2dSpriteAnimationClip mDown;
+    private tk2dSpriteAnimationClip mWallStick;
+    private tk2dSpriteAnimationClip mWallJump;
 
     private bool mIsLeft;
     private bool mAnimationActive = true;
@@ -30,6 +36,9 @@ public class PlatformerSpriteController : MonoBehaviour {
         mIsLeft = false;
         if(anim && anim.Sprite)
             anim.Sprite.FlipX = false;
+
+        wallStickParticle.loop = false;
+        wallStickParticle.Stop();
     }
 
     void OnDestroy() {
@@ -44,6 +53,8 @@ public class PlatformerSpriteController : MonoBehaviour {
         mMove = anim.GetClipByName(moveClip);
         mUp = anim.GetClipByName(upClip);
         mDown = anim.GetClipByName(downClip);
+        mWallStick = anim.GetClipByName(wallStickClip);
+        mWallJump = anim.GetClipByName(wallJumpClip);
 
         if(controller == null)
             controller = GetComponent<PlatformerController>();
@@ -52,41 +63,52 @@ public class PlatformerSpriteController : MonoBehaviour {
     // Update is called once per frame
     void Update() {
         if(mAnimationActive) {
-            if(controller.isGrounded) {
-                if(controller.moveSide != 0.0f) {
-                    anim.Play(mMove);
+            bool left = mIsLeft;
+
+            if(controller.isJumpWall) {
+                anim.Play(mWallJump);
+
+                left = controller.localVelocity.x < 0.0f;
+            }
+            else if(controller.isWallStick) {
+                if(wallStickParticle.isStopped) {
+                    wallStickParticle.Play();
                 }
-                else {
-                    anim.Play(mIdle);
-                }
+
+                wallStickParticle.loop = true;
+                
+                anim.Play(mWallStick);
+
+                left = M8.MathUtil.CheckSide(controller.wallStickCollide.normal, controller.dirHolder.up) == M8.MathUtil.Side.Right;
+
             }
             else {
-                Vector2 up = controller.dirHolder.up;
-                Vector2 vel = controller.rigidbody.velocity;
+                wallStickParticle.loop = false;
 
-                if(Vector2.Angle(up, vel) > 90) {
-                    anim.Play(mDown);
+                if(controller.isGrounded) {
+                    if(controller.moveSide != 0.0f) {
+                        anim.Play(mMove);
+                    }
+                    else {
+                        anim.Play(mIdle);
+                    }
                 }
                 else {
-                    anim.Play(mUp);
+                    Vector2 up = controller.dirHolder.up;
+                    Vector2 vel = controller.rigidbody.velocity;
+
+                    if(Vector2.Angle(up, vel) > 90) {
+                        anim.Play(mDown);
+                    }
+                    else {
+                        anim.Play(mUp);
+                    }
+                }
+
+                if(controller.moveSide != 0.0f) {
+                    left = controller.moveSide < 0.0f;
                 }
             }
-        }
-
-        if(controller.isJumpWall) {
-            bool left = controller.localVelocity.x < 0.0f;
-
-            if(mIsLeft != left) {
-                mIsLeft = left;
-
-                anim.Sprite.FlipX = mIsLeft;
-
-                if(flipCallback != null)
-                    flipCallback(this);
-            }
-        }
-        else if(controller.moveSide != 0.0f) {
-            bool left = controller.moveSide < 0.0f;
 
             if(mIsLeft != left) {
                 mIsLeft = left;
