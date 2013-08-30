@@ -15,10 +15,15 @@ public class PlayerController : MonoBehaviour {
     public float dropAngle = 60;
     public float dropImpulse = -20;
 
-    public float hurtImpulse = 3.0f;
+    public float hurtForce = 30.0f;
+    public float hurtForceDelay;
     public float hurtInvulDelay = 2.0f;
 
+    public AnimatorData doubleJumpAnim;
+
     public SpriteColorBlink[] spriteBlinks;
+
+    public LayerMask bombCollisionCheckMask;
 
     private Player mPlayer;
     private PlatformerController mBody;
@@ -58,13 +63,17 @@ public class PlayerController : MonoBehaviour {
 
     public Player player { get { return mPlayer; } }
 
-    void DoThrow(float impulse, float angle) {
+    bool CheckBombCollideAt(Vector3 pos) {
+        return Physics.CheckSphere(pos, (bomb.collider as SphereCollider).radius, bombCollisionCheckMask);
+    }
+
+    void DoThrow(Vector3 pos, float impulse, float angle) {
         attachPoint.gameObject.SetActive(false);
         mBody.ResetCollision();
 
         attachSpriteAnim.Play("empty");
 
-        bomb.transform.position = attachPoint.position;
+        bomb.transform.position = pos;
         bomb.transform.rotation = attachPoint.rotation;
         bomb.rigidbody.angularVelocity = Vector3.zero;
 
@@ -103,12 +112,31 @@ public class PlayerController : MonoBehaviour {
     }
 
     public void ThrowAttach() {
-        DoThrow(throwImpulse, throwAngle);
+        if(!CheckBombCollideAt(attachPoint.position))
+            DoThrow(attachPoint.position, throwImpulse, throwAngle);
+        else
+            attachAnimator.Stop();
     }
 
     public void DropAttach() {
-        if(hasAttach)
-            DoThrow(dropImpulse, dropAngle);
+        if(hasAttach) {
+            Vector3 lpos = mBody.transform.worldToLocalMatrix.MultiplyPoint(attachPoint.position);
+            Vector3 pos = attachPoint.position;
+            Matrix4x4 mtx = mBody.transform.localToWorldMatrix;
+
+            for(int i = 0; i < 4; i++) {
+                if(!CheckBombCollideAt(pos))
+                    break;
+
+                Vector2 p2 = M8.MathUtil.Rotate(lpos, Mathf.PI * 0.5f);
+                lpos.x = p2.x; lpos.y = p2.y;
+                pos = mtx.MultiplyPoint(lpos);
+
+                dropAngle += 90.0f;
+            }
+
+            DoThrow(pos, dropImpulse, dropAngle);
+        }
     }
 
     public void BombActive() {
@@ -132,20 +160,44 @@ public class PlayerController : MonoBehaviour {
         if(!mPlayer.isBlinking && mPlayer.state != (int)Player.State.Hurt) {
             mPlayer.state = (int)Player.State.Hurt;
 
-            mBody.rigidbody.AddForce(dir * hurtImpulse, ForceMode.Impulse);
-
-            //TODO: remove me
             SoundPlayerGlobal.instance.Play("hurt");
+
+            StopCoroutine("DoHurtForce");
+            StartCoroutine(DoHurtForce(dir));
 
             return true;
         }
-        else if(forceBounce)
-            mBody.rigidbody.AddForce(dir * hurtImpulse, ForceMode.Impulse);
+        else if(forceBounce) {
+            StopCoroutine("DoHurtForce");
+            StartCoroutine(DoHurtForce(dir));
+        }
 
         return false;
     }
 
+    IEnumerator DoHurtForce(Vector3 dir) {
+        mBody.ResetCollision();
+        mBody.lockDrag = true;
+        mBody.rigidbody.drag = 0.0f;
+
+        WaitForFixedUpdate wait = new WaitForFixedUpdate();
+        float t = 0.0f;
+
+        while(t < hurtForceDelay) {
+            yield return wait;
+
+            mBody.rigidbody.AddForce(dir * hurtForce);
+
+            t += Time.fixedDeltaTime;
+        }
+
+        mBody.ResetCollision();
+    }
+
     void ResetData() {
+        StopCoroutine("DoHurtForce");
+        StopCoroutine("DoBombCorrection");
+
         if(attachPoint)
             attachPoint.gameObject.SetActive(true);
 
@@ -176,6 +228,8 @@ public class PlayerController : MonoBehaviour {
                 mHUD.targetOffScreen.gameObject.SetActive(false);
         }
 
+        doubleJumpAnim.Stop();
+
     }
 
     void OnDestroy() {
@@ -195,6 +249,7 @@ public class PlayerController : MonoBehaviour {
         mBody.moveInputY = InputAction.MoveY;
         mBody.jumpInput = InputAction.Jump;
 
+        mBody.jumpCallback += OnBodyJump;
         mBody.collisionStayCallback += OnBodyCollisionStay;
 
         mBodySpriteCtrl = mBody.GetComponent<PlatformerSpriteController>();
@@ -231,7 +286,7 @@ public class PlayerController : MonoBehaviour {
 
     void OnInputAction(InputManager.Info dat) {
         if(dat.state == InputManager.State.Pressed) {
-            if(hasAttach && !attachAnimator.isPlaying) {
+            if(hasAttach && !attachAnimator.isPlaying && !CheckBombCollideAt(attachPoint.position)) {
                 attachAnimator.Play(mBodySpriteCtrl.isLeft ? "throwLeft" : "throw");
             }
         }
@@ -293,7 +348,6 @@ public class PlayerController : MonoBehaviour {
 
         if(attachAnimator.isPlaying) {
             float t = attachAnimator.currentPlayingTake.sequence.elapsed;
-            attachAnimator.Stop();
             attachAnimator.PlayAtTime(mBodySpriteCtrl.isLeft ? "throwLeft" : "throw", t);
         }
 
@@ -341,6 +395,16 @@ public class PlayerController : MonoBehaviour {
     void OnUIModalInactive() {
         if(mPlayer.state == (int)Player.State.Normal) {
             inputEnabled = true;
+        }
+    }
+
+    void OnBodyJump(PlatformerController ctrl) {
+        SoundPlayerGlobal.instance.Play("jump");
+
+        if(mBody.jumpCounterCurrent > 1 && !mBody.isJumpWall && !doubleJumpAnim.isPlaying) {
+            doubleJumpAnim.transform.rotation = mBody.transform.rotation;
+            doubleJumpAnim.transform.position = mBody.transform.position;// -mBody.transform.up * mBody.collider.bounds.extents.y;
+            doubleJumpAnim.Play("boost");
         }
     }
 }

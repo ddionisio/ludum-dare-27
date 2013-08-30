@@ -8,8 +8,8 @@ public class PlatformerController : RigidBodyController {
     [SerializeField]
     Transform _eye;
 
-    public float eyeLockOrientSpeed = 180.0f; //when we lock the eye again, this is the speed to re-orient based on dirHolder
-    public float eyeLockPositionDelay = 1.0f; //reposition delay when we lock the eye again
+    public float eyeOrientSpeed = 180.0f; //when we lock the eye again, this is the speed to re-orient based on dirHolder
+    public float eyePositionDelay = 0.1f; //reposition delay when we lock the eye again
 
     public int jumpCounter = 1;
     public float jumpAirImpulse = 2.5f;
@@ -43,6 +43,7 @@ public class PlatformerController : RigidBodyController {
     public bool startInputEnabled = false;
 
     public event Callback landCallback;
+    public event Callback jumpCallback;
 
     private bool mInputEnabled = false;
 
@@ -57,7 +58,6 @@ public class PlatformerController : RigidBodyController {
     private Quaternion mLadderRot;
 
     private bool mEyeLocked = true;
-    private bool mEyeOrienting = false;
     private Vector3 mEyeOrientVel;
     private bool mLastGround;
 
@@ -98,19 +98,13 @@ public class PlatformerController : RigidBodyController {
     public bool eyeLocked {
         get { return _eye != null && mEyeLocked; }
         set {
-            if(mEyeLocked != value && _eye != null) {
-                mEyeLocked = value;
-
-                if(mEyeLocked) {
-                    //move eye orientation to dirHolder
-                    EyeOrient();
-                }
-                else {
-                    mEyeOrienting = false;
-                }
-            }
+            //if(mEyeLocked != value) {
+            mEyeLocked = value;
+            //}
         }
     }
+
+    public int jumpCounterCurrent { get { return mJumpCounter; } }
 
     public bool isJumpWall { get { return mJumpingWall; } }
 
@@ -305,6 +299,11 @@ public class PlatformerController : RigidBodyController {
                 if(landCallback != null)
                     landCallback(this);
             }
+            else {
+                //falling down?
+                if(mJumpCounter <= 0)
+                    mJumpCounter = 1;
+            }
 
             mLastGround = isGrounded;
         }
@@ -314,6 +313,7 @@ public class PlatformerController : RigidBodyController {
         inputEnabled = false;
 
         landCallback = null;
+        jumpCallback = null;
 
         base.OnDestroy();
     }
@@ -321,7 +321,6 @@ public class PlatformerController : RigidBodyController {
     protected override void OnDisable() {
         base.OnDisable();
 
-        mEyeOrienting = false;
     }
 
     protected override void Awake() {
@@ -409,14 +408,21 @@ public class PlatformerController : RigidBodyController {
             mJumpingWall = false;
 
         //set eye rotation
-        if(_eye != null && mEyeLocked && !mEyeOrienting) {
-            Quaternion rot = dirHolder.rotation;
+        if(_eye != null && mEyeLocked) {
             Vector3 pos = dirHolder.position;
 
-            //TODO: smoothing?
+            bool posDone = _eye.position == pos;
+            if(!posDone) {
+                _eye.position = Vector3.SmoothDamp(_eye.position, pos, ref mEyeOrientVel, eyePositionDelay, Mathf.Infinity, Time.fixedDeltaTime);
+            }
+            else
+                mEyeOrientVel = Vector3.zero;
 
-            _eye.rotation = rot;
-            _eye.position = pos;
+            bool rotDone = _eye.rotation == dirRot;
+            if(!rotDone) {
+                float step = eyeOrientSpeed * Time.fixedDeltaTime;
+                _eye.rotation = Quaternion.RotateTowards(_eye.rotation, dirRot, step);
+            }
         }
 
         base.FixedUpdate();
@@ -475,11 +481,11 @@ public class PlatformerController : RigidBodyController {
                 mJumpLastTime = Time.fixedTime;
                 //mJumpCounter = Mathf.Clamp(mJumpCounter + 1, 0, jumpCounter);
 
-                //TODO: remove me
-                SoundPlayerGlobal.instance.Play("jump");
+                if(jumpCallback != null)
+                    jumpCallback(this);
             }
             else if(!isSlopSlide) {
-                if((mJumpCounter == 0 && isGrounded) || (mJumpCounter > 0 && mJumpCounter < jumpCounter)) {
+                if(mJumpCounter >= 0 && (isGrounded || mJumpCounter < jumpCounter)) {
                     lockDrag = true;
                     rigidbody.drag = airDrag;
 
@@ -492,21 +498,11 @@ public class PlatformerController : RigidBodyController {
                     mJump = true;
                     mJumpLastTime = Time.fixedTime;
 
-                    //TODO: remove me
-                    SoundPlayerGlobal.instance.Play("jump");
+                    if(jumpCallback != null)
+                        jumpCallback(this);
                 }
             }
         }
-    }
-
-    void EyeOrient() {
-        //move eye orientation to dirHolder
-        if(!mEyeOrienting) {
-            mEyeOrienting = true;
-            StartCoroutine(EyeOrienting());
-        }
-
-        mEyeOrientVel = Vector3.zero;
     }
 
     IEnumerator LadderOrientUp() {
@@ -519,27 +515,6 @@ public class PlatformerController : RigidBodyController {
             }
 
             yield return waitUpdate;
-        }
-    }
-
-    IEnumerator EyeOrienting() {
-        WaitForFixedUpdate waitUpdate = new WaitForFixedUpdate();
-
-        while(mEyeOrienting) {
-            yield return waitUpdate;
-
-            bool posDone = _eye.position == dirHolder.position;
-            if(!posDone) {
-                _eye.position = Vector3.SmoothDamp(_eye.position, dirHolder.position, ref mEyeOrientVel, eyeLockPositionDelay, Mathf.Infinity, Time.fixedDeltaTime);
-            }
-
-            bool rotDone = _eye.rotation == dirHolder.rotation;
-            if(!rotDone) {
-                float step = eyeLockOrientSpeed * Time.fixedDeltaTime;
-                _eye.rotation = Quaternion.RotateTowards(_eye.rotation, dirHolder.rotation, step);
-            }
-
-            mEyeOrienting = !rotDone;
         }
     }
 

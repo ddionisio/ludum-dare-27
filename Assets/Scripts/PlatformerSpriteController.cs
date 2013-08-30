@@ -11,6 +11,8 @@ public class PlatformerSpriteController : MonoBehaviour {
     public string moveClip = "move";
     public string upClip = "up";
     public string downClip = "down";
+    public string upGlowClip = "upGlow";
+    public string downGlowClip = "downGlow";
     public string wallStickClip = "wall";
     public string wallJumpClip = "wallJump";
 
@@ -22,6 +24,8 @@ public class PlatformerSpriteController : MonoBehaviour {
     private tk2dSpriteAnimationClip mMove;
     private tk2dSpriteAnimationClip mUp;
     private tk2dSpriteAnimationClip mDown;
+    private tk2dSpriteAnimationClip mUpGlow;
+    private tk2dSpriteAnimationClip mDownGlow;
     private tk2dSpriteAnimationClip mWallStick;
     private tk2dSpriteAnimationClip mWallJump;
 
@@ -53,6 +57,8 @@ public class PlatformerSpriteController : MonoBehaviour {
         mMove = anim.GetClipByName(moveClip);
         mUp = anim.GetClipByName(upClip);
         mDown = anim.GetClipByName(downClip);
+        mUpGlow = anim.GetClipByName(upGlowClip);
+        mDownGlow = anim.GetClipByName(downGlowClip);
         mWallStick = anim.GetClipByName(wallStickClip);
         mWallJump = anim.GetClipByName(wallJumpClip);
 
@@ -76,7 +82,7 @@ public class PlatformerSpriteController : MonoBehaviour {
                 }
 
                 wallStickParticle.loop = true;
-                
+
                 anim.Play(mWallStick);
 
                 left = M8.MathUtil.CheckSide(controller.wallStickCollide.normal, controller.dirHolder.up) == M8.MathUtil.Side.Right;
@@ -98,10 +104,10 @@ public class PlatformerSpriteController : MonoBehaviour {
                     Vector2 vel = controller.rigidbody.velocity;
 
                     if(Vector2.Angle(up, vel) > 90) {
-                        anim.Play(mDown);
+                        anim.Play(controller.jumpCounterCurrent < controller.jumpCounter ? mDownGlow : mDown);
                     }
                     else {
-                        anim.Play(mUp);
+                        anim.Play(controller.jumpCounterCurrent < controller.jumpCounter ? mUpGlow : mUp);
                     }
                 }
 
