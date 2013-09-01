@@ -44,7 +44,7 @@ public class ModalLevelSelect : UIController {
         mLevels = GetComponentsInChildren<LevelSelectItem>(true);
         System.Array.Sort(mLevels, Compare);
 
-        mLevelSelectInd = -1;
+        mLevelSelectInd = 0;
 
         int numComplete = 0;
         int numLevels = mLevels.Length;
@@ -54,8 +54,8 @@ public class ModalLevelSelect : UIController {
 
             itm.Init();
 
-            if(itm.completed) numComplete++;
-            else if(mLevelSelectInd == -1) mLevelSelectInd = i;
+            //if(itm.completed) numComplete++;
+            //else if(mLevelSelectInd == -1) mLevelSelectInd = i;
         }
 
         SceneState.instance.SetGlobalValue("numLevels", numLevels, false);

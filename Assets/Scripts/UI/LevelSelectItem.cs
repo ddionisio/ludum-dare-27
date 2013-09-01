@@ -2,22 +2,12 @@
 using System.Collections;
 
 public class LevelSelectItem : MonoBehaviour {
-    public string level;
-
-    public GameObject[] completedObjs;
-
-    private bool mCompleted;
-    
-
-    public bool completed { get { return mCompleted; } }
+    public int level;
+    public UILabel label;
+    public UISprite[] stars;
 
     public void Init() {
-        bool isComplete = UserData.instance.GetInt(level, 0) > 0;
-
-        foreach(GameObject go in completedObjs)
-            go.SetActive(isComplete);
-
-        mCompleted = isComplete;
+        
     }
 
     void Awake() {
@@ -32,6 +22,6 @@ public class LevelSelectItem : MonoBehaviour {
     }
 
     void OnClick() {
-        Main.instance.sceneManager.LoadScene(level);
+        //Main.instance.sceneManager.LoadScene(level);
     }
 }
