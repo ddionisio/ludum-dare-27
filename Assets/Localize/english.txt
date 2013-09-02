@@ -2,5 +2,17 @@
 	{
 		"key":"title",
 		"text":"UNKNOWN"
-	}
+	},
+	
+	{ "key":"stage_0_title", "text":"ludum-dare-27" },
+	{ "key":"stage_0_desc", "text":"These are the levels made for the 48-hour Ludum Dare compo." },
+	
+	{ "key":"stage_1_title", "text":"blah" },
+	{ "key":"stage_1_desc", "text":"blah blah" },
+	
+	{ "key":"stage_2_title", "text":"blah blah" },
+	{ "key":"stage_2_desc", "text":"blah blah blah" },
+	
+	{ "key":"stage_3_title", "text":"blah blah blah" },
+	{ "key":"stage_3_desc", "text":"blah blah blah blah" },
 ]

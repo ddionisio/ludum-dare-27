@@ -25,6 +25,7 @@ public class ModalOptions : UIController {
     }
 
     protected override void OnOpen() {
+        RefreshLabels();
     }
 
     protected override void OnClose() {

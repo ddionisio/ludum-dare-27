@@ -64,7 +64,7 @@ public class PlayerController : MonoBehaviour {
     public Player player { get { return mPlayer; } }
 
     bool CheckBombCollideAt(Vector3 pos) {
-        return Physics.CheckSphere(pos, (bomb.collider as SphereCollider).radius, bombCollisionCheckMask);
+        return Physics.CheckSphere(pos, (bomb.collider as SphereCollider).radius*0.5f, bombCollisionCheckMask);
     }
 
     void DoThrow(Vector3 pos, float impulse, float angle) {
