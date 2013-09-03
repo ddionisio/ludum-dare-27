@@ -6,6 +6,8 @@ public class BombController : MonoBehaviour {
 
     public float deathDelay = 10.0f;
 
+    public tk2dSpriteAnimator anim;
+
     public event Callback deathCallback;
 
     private float mCurDelay;
@@ -22,6 +24,16 @@ public class BombController : MonoBehaviour {
 
     public void Init() {
         mCurDelay = deathDelay;
+        collider.enabled = true;
+        anim.gameObject.SetActive(true);
+    }
+
+    /// <summary>
+    /// Use for goal
+    /// </summary>
+    public void Consume() {
+        collider.enabled = false;
+        anim.gameObject.SetActive(false);
     }
 
     public void Activate() {

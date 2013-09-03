@@ -144,7 +144,7 @@ public class LevelManager : MonoBehaviour {
     }
 
     public static string GetTimeText(float time) {
-        int centi = Mathf.RoundToInt((time - Mathf.Floor(time)) * 100.0f);
+        int centi = Mathf.FloorToInt((time - Mathf.Floor(time)) * 100.0f);
         int sec = Mathf.FloorToInt(time);
 
         return string.Format("{0:D3}.{1:D2}", sec, centi);

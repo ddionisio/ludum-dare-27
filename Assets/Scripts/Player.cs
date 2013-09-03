@@ -11,12 +11,16 @@ public class Player : EntityBase {
     }
 
     public string gameoverScene = "gameover";
-        
+
     private static Player mInstance;
 
     private bool mIsGoal;
     private PlayerController mCtrl;
-    private string mExitScene;
+
+    private float mCurTime = 0;
+    private bool mTimerActive = false;
+
+    private HUD mHUD;
 
     private M8.ImageEffects.WaveRGB mGameOverFX;
 
@@ -24,13 +28,32 @@ public class Player : EntityBase {
 
     public PlayerController controller { get { return mCtrl; } }
 
+    public float curTime { get { return mCurTime; } }
+
     public bool isGoal { get { return mIsGoal; } set { mIsGoal = value; } }
 
+    public HUD HUD { get { return mHUD; } }
+            
     protected override void StateChanged() {
         switch((State)state) {
             case State.Invalid:
                 if(mGameOverFX)
                     mGameOverFX.enabled = false;
+
+                mCurTime = 0.0f;
+                mTimerActive = false;
+
+                mIsGoal = false;
+
+                if(mHUD)
+                    mHUD.ResetData();
+                break;
+
+            case State.Normal:
+                if(!mTimerActive) {
+                    mTimerActive = true;
+                    StartCoroutine(Timer());
+                }
                 break;
         }
     }
@@ -57,16 +80,13 @@ public class Player : EntityBase {
     }
 
     public void ExitToScene(string scene) {
-        mExitScene = scene;
         Main.instance.sceneManager.LoadScene(scene);
         //start the exit animation
     }
 
     public override void Release() {
         state = (int)State.Invalid;
-
-        mIsGoal = false;
-
+                
         base.Release();
     }
 
@@ -86,6 +106,8 @@ public class Player : EntityBase {
             mGameOverFX = Camera.main.GetComponent<M8.ImageEffects.WaveRGB>();
 
             mCtrl = GetComponent<PlayerController>();
+
+            mHUD = HUD.GetHUD();
 
             base.Awake();
 
@@ -126,5 +148,19 @@ public class Player : EntityBase {
         yield return new WaitForSeconds(2.0f);
 
         Main.instance.sceneManager.LoadScene(gameoverScene);
+    }
+
+    IEnumerator Timer() {
+        mCurTime = 0.0f;
+
+        WaitForFixedUpdate wait = new WaitForFixedUpdate();
+
+        while(mTimerActive) {
+            yield return wait;
+
+            mCurTime += Time.fixedDeltaTime;
+
+            mHUD.RefreshTimer(mCurTime);
+        }
     }
 }

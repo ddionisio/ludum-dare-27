@@ -30,8 +30,6 @@ public class PlayerController : MonoBehaviour {
     private PlatformerSpriteController mBodySpriteCtrl;
     private BombController mBombCtrl;
 
-    private HUD mHUD;
-
     private GameObject mTargetGO; //goal
 
     private bool mInputEnabled = false;
@@ -64,7 +62,7 @@ public class PlayerController : MonoBehaviour {
     public Player player { get { return mPlayer; } }
 
     bool CheckBombCollideAt(Vector3 pos) {
-        return Physics.CheckSphere(pos, (bomb.collider as SphereCollider).radius*0.5f, bombCollisionCheckMask);
+        return Physics.CheckSphere(pos, (bomb.collider as SphereCollider).radius * 0.5f, bombCollisionCheckMask);
     }
 
     void DoThrow(Vector3 pos, float impulse, float angle) {
@@ -99,7 +97,7 @@ public class PlayerController : MonoBehaviour {
         if(bombSpr)
             bombSpr.FlipX = mBodySpriteCtrl.isLeft;
 
-        mHUD.targetOffScreen.gameObject.SetActive(false);
+        mPlayer.HUD.targetOffScreen.gameObject.SetActive(false);
     }
 
     IEnumerator DoBombCorrection(Vector3 up) {
@@ -153,7 +151,7 @@ public class PlayerController : MonoBehaviour {
             attachSpriteAnim.Play("bomb");
 
 
-        mHUD.targetOffScreen.gameObject.SetActive(true);
+        mPlayer.HUD.targetOffScreen.gameObject.SetActive(true);
     }
 
     public bool Hurt(Vector3 dir, bool forceBounce) {
@@ -223,9 +221,9 @@ public class PlayerController : MonoBehaviour {
         if(mBombCtrl)
             mBombCtrl.Init();
 
-        if(mHUD) {
-            if(mHUD.targetOffScreen)
-                mHUD.targetOffScreen.gameObject.SetActive(false);
+        if(mPlayer.HUD) {
+            if(mPlayer.HUD.targetOffScreen)
+                mPlayer.HUD.targetOffScreen.gameObject.SetActive(false);
         }
 
         doubleJumpAnim.Stop();
@@ -251,6 +249,7 @@ public class PlayerController : MonoBehaviour {
 
         mBody.jumpCallback += OnBodyJump;
         mBody.collisionStayCallback += OnBodyCollisionStay;
+        mBody.triggerEnterCallback += OnBodyTriggerEnter;
 
         mBodySpriteCtrl = mBody.GetComponent<PlatformerSpriteController>();
         mBodySpriteCtrl.flipCallback += OnFlipCallback;
@@ -260,11 +259,6 @@ public class PlayerController : MonoBehaviour {
         mBombCtrl.deathCallback += OnBombDeathCallback;
 
         mTargetGO = GameObject.FindGameObjectWithTag("Goal");
-
-        mHUD = HUD.GetHUD();
-        mHUD.targetOffScreen.SetPOI(mTargetGO.transform);
-
-        ResetData();
     }
 
     // Use this for initialization
@@ -279,8 +273,8 @@ public class PlayerController : MonoBehaviour {
         }*/
 
         if(mPlayer.isGoal) {
-            if(mHUD.targetOffScreen.gameObject.activeSelf)
-                mHUD.targetOffScreen.gameObject.SetActive(false);
+            if(mPlayer.HUD.targetOffScreen.gameObject.activeSelf)
+                mPlayer.HUD.targetOffScreen.gameObject.SetActive(false);
         }
     }
 
@@ -293,6 +287,10 @@ public class PlayerController : MonoBehaviour {
     }
 
     void OnPlayerSpawn(EntityBase ent) {
+        ResetData();
+
+        mPlayer.HUD.targetOffScreen.SetPOI(mTargetGO.transform);
+
         BombActive();
     }
 
@@ -373,6 +371,16 @@ public class PlayerController : MonoBehaviour {
                 if(!mPlayer.isGoal && (mBodySpriteCtrl.anim.CurrentClip == null || mBodySpriteCtrl.anim.CurrentClip.name != "hurt") && !attachAnimator.isPlaying)
                     BombActive();
             }
+        }
+    }
+
+    void OnBodyTriggerEnter(RigidBodyController ctrl, Collider col) {
+        if(col.gameObject.tag == "Star") {
+            col.enabled = false;
+            AnimatorData anim = col.GetComponent<AnimatorData>();
+            anim.Play("collect");
+
+            mPlayer.HUD.StarFill();
         }
     }
 

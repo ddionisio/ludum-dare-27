@@ -154,8 +154,6 @@ public class PlatformerController : RigidBodyController {
     }
 
     protected override void OnTriggerEnter(Collider col) {
-        base.OnTriggerEnter(col);
-
         if(M8.Util.CheckLayerAndTag(col.gameObject, ladderLayer, ladderTag)) {
             mLadderUp = col.transform.up;
 
@@ -177,11 +175,12 @@ public class PlatformerController : RigidBodyController {
 
             mJumpingWall = false;
         }
+        else {
+            base.OnTriggerEnter(col);
+        }
     }
 
     protected override void OnTriggerStay(Collider col) {
-        base.OnTriggerStay(col);
-
         if(M8.Util.CheckLayerAndTag(col.gameObject, ladderLayer, ladderTag)) {
             if(mLadderCounter == 0) {
                 mLadderCounter++;
@@ -203,13 +202,17 @@ public class PlatformerController : RigidBodyController {
                     transform.up = mLadderUp;
             }
         }
+        else {
+            base.OnTriggerStay(col);
+        }
     }
 
     protected override void OnTriggerExit(Collider col) {
-        base.OnTriggerExit(col);
-
         if(M8.Util.CheckLayerAndTag(col.gameObject, ladderLayer, ladderTag)) {
             mLadderCounter--;
+        }
+        else {
+            base.OnTriggerExit(col);
         }
 
         if(!isOnLadder) {
@@ -303,6 +306,8 @@ public class PlatformerController : RigidBodyController {
                 //falling down?
                 if(mJumpCounter <= 0)
                     mJumpCounter = 1;
+
+                mJumpLastTime = Time.fixedTime;
             }
 
             mLastGround = isGrounded;

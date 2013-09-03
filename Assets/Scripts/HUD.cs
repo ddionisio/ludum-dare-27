@@ -14,6 +14,12 @@ public class HUD : MonoBehaviour {
 
     public NGUIPointAt targetOffScreen;
 
+    public UILabel timerLabel;
+
+    public StarItem[] stars;
+
+    private int mStarsFilled = 0;
+
     public static HUD GetHUD() {
         HUD ret = null;
 
@@ -21,6 +27,29 @@ public class HUD : MonoBehaviour {
         ret = hudGO.GetComponent<HUD>();
 
         return ret;
+    }
+
+    public int starsFilled { get { return mStarsFilled; } }
+
+    public void ResetData() {
+        RefreshTimer(0.0f);
+
+        foreach(StarItem star in stars) {
+            if(star)
+                star.ResetData();
+        }
+    }
+
+    public void RefreshTimer(float t) {
+        if(timerLabel)
+            timerLabel.text = LevelManager.GetTimeText(t);
+    }
+
+    public void StarFill() {
+        if(mStarsFilled < stars.Length) {
+            stars[mStarsFilled].Fill();
+            mStarsFilled++;
+        }
     }
 
     void Awake() {
