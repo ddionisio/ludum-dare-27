@@ -15,7 +15,7 @@ public class ModalLevelSelect : UIController {
             StartCoroutine(NGUILayoutBase.RefreshLate(transform));
         }
         else {
-            
+
         }
     }
 
@@ -42,36 +42,38 @@ public class ModalLevelSelect : UIController {
 
         int lastLevelUnlocked = 0;
 
-        int numLevels = mLevels.Length;
+        int numLevels = lvlMgr.curStageData.levels.Length;
+        int numItemLevels = mLevels.Length;
 
-        for(int i = 0; i < lvlMgr.curStageData.levels.Length; i++) {
+        for(int i = 0; i < numLevels; i++) {
             LevelSelectItem itm = mLevels[i];
             itm.Init(i);
 
             if(i == 0 || lvlMgr.curStageData.levels[i - 1].completed) {
                 lastLevelUnlocked = i;
-
-                itm.label.color = Color.white;
             }
-            else
-                itm.label.color = Color.gray;
         }
 
-        for(int i = lvlMgr.curStageData.levels.Length; i < numLevels; i++) {
+        //hide excess level items
+        for(int i = numLevels; i < numItemLevels; i++) {
             LevelSelectItem itm = mLevels[i];
             itm.gameObject.SetActive(false);
         }
 
         //determine connections
-        mLevels[0].buttonKeys.selectOnUp = mLevels[lastLevelUnlocked].buttonKeys;
-        mLevels[lastLevelUnlocked].buttonKeys.selectOnDown = mLevels[0].buttonKeys;
+        mLevels[0].buttonKeys.selectOnUp = mLevels[numLevels - 1].buttonKeys;
+        mLevels[numLevels - 1].buttonKeys.selectOnDown = mLevels[0].buttonKeys;
 
-        for(int i = 0; i < lastLevelUnlocked; i++) {
-            mLevels[i].buttonKeys.selectOnDown = mLevels[i + 1].buttonKeys;
+        for(int i = 0; i < numLevels; i++) {
+            if(i > 0)
+                mLevels[i].buttonKeys.selectOnUp = mLevels[i - 1].buttonKeys;
+
+            if(i < numLevels - 1)
+                mLevels[i].buttonKeys.selectOnDown = mLevels[i + 1].buttonKeys;
         }
 
-        mLevelSelectInd = lastLevelUnlocked < lvlMgr.curStageData.levels.Length - 1 ? lastLevelUnlocked : 0;
-                
-        title.text = lvlMgr.curStageData.title + "\n\n";
+        mLevelSelectInd = lastLevelUnlocked < numLevels - 1 ? lastLevelUnlocked : 0;
+
+        title.text = lvlMgr.curStageData.title;
     }
 }

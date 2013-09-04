@@ -17,7 +17,8 @@ public class VictoryTrigger : MonoBehaviour {
         Player player = Player.instance;
 
         if(player.isGoal && col == player.controller.body.collider) {
-            player.ExitToScene(victoryScene);
+            //player.ExitToScene(victoryScene);
+            player.state = (int)Player.State.Victory;
         }
     }
 }

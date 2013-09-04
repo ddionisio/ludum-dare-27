@@ -4,8 +4,16 @@
 		"text":"UNKNOWN"
 	},
 	
+	{ "key":"hiscore", "text":"HI-SCORE: {0:D8}" },
+	{ "key":"maxstars", "text":"STARS: {0}" },
+	
+	{ "key":"stage_locked", "text":"You need {0} stars to play this stage." },
+	
 	{ "key":"stage_0_title", "text":"ludum-dare-27" },
 	{ "key":"stage_0_desc", "text":"These are the levels made for the 48-hour Ludum Dare compo." },
+	
+	{ "key":"level0_0", "text":"First!" },
+	{ "key":"level0_1", "text":"No Time" },
 	
 	{ "key":"stage_1_title", "text":"blah" },
 	{ "key":"stage_1_desc", "text":"blah blah" },

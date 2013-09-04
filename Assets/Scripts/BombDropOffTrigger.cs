@@ -14,18 +14,20 @@ public class BombDropOffTrigger : MonoBehaviour {
         if(col.gameObject.tag == "Bomb") {
             Player player = Player.instance;
 
-            bool prevGoal = player.isGoal;
+            if(player.state != (int)Player.State.Dead) {
+                bool prevGoal = player.isGoal;
 
-            player.isGoal = true;
+                player.isGoal = true;
 
-            anim.Play(goal);
+                anim.Play(goal);
 
-            if(!prevGoal) {
-                SoundPlayerGlobal.instance.Play("goal");
+                if(!prevGoal) {
+                    SoundPlayerGlobal.instance.Play("goal");
+                }
+
+                BombController bomb = col.GetComponent<BombController>();
+                bomb.Consume();
             }
-
-            BombController bomb = col.GetComponent<BombController>();
-            bomb.Consume();
         }
     }
 }

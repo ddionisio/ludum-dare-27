@@ -155,7 +155,7 @@ public class PlayerController : MonoBehaviour {
     }
 
     public bool Hurt(Vector3 dir, bool forceBounce) {
-        if(!mPlayer.isBlinking && mPlayer.state != (int)Player.State.Hurt) {
+        if(!mPlayer.isBlinking && mPlayer.state == (int)Player.State.Normal) {
             mPlayer.state = (int)Player.State.Hurt;
 
             SoundPlayerGlobal.instance.Play("hurt");
@@ -192,7 +192,7 @@ public class PlayerController : MonoBehaviour {
         mBody.ResetCollision();
     }
 
-    void ResetData() {
+    public void ResetData() {
         StopCoroutine("DoHurtForce");
         StopCoroutine("DoBombCorrection");
 
@@ -315,13 +315,28 @@ public class PlayerController : MonoBehaviour {
                 break;
 
             case Player.State.Victory:
-            case Player.State.Dead:
-                //TODO: animation?
+                ResetData();
 
                 attachAnimator.Stop();
 
                 mBodySpriteCtrl.animationActive = false;
                 inputEnabled = false;
+
+                mBombCtrl.StopTimer();
+                break;
+
+            case Player.State.Dead:
+                ResetData();
+
+                attachAnimator.Stop();
+
+                BombActive();
+
+                mBodySpriteCtrl.animationActive = false;
+                inputEnabled = false;
+
+                BombDropOffTrigger goalCtrl = mTargetGO.GetComponent<BombDropOffTrigger>();
+                goalCtrl.ResetData();
                 break;
 
             case Player.State.Invalid:
@@ -336,7 +351,7 @@ public class PlayerController : MonoBehaviour {
         foreach(SpriteColorBlink blink in spriteBlinks)
             blink.enabled = b;
 
-        if(!b) {
+        if(!b && mPlayer.state == (int)Player.State.Hurt) {
             mPlayer.state = (int)Player.State.Normal;
         }
     }
@@ -392,7 +407,6 @@ public class PlayerController : MonoBehaviour {
     }
 
     void OnBombDeathCallback(BombController ctrl) {
-        mPlayer.state = (int)Player.State.Dead;
         mPlayer.GameOver();
     }
 

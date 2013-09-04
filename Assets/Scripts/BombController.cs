@@ -14,6 +14,7 @@ public class BombController : MonoBehaviour {
 
     private HUD mHUD;
     private GameObject mExitGO;
+    private bool mTimerActive = false;
 
     public float curDelay {
         get { return mCurDelay; }
@@ -23,6 +24,7 @@ public class BombController : MonoBehaviour {
     }
 
     public void Init() {
+        mTimerActive = false;
         mCurDelay = deathDelay;
         collider.enabled = true;
         anim.gameObject.SetActive(true);
@@ -32,16 +34,26 @@ public class BombController : MonoBehaviour {
     /// Use for goal
     /// </summary>
     public void Consume() {
+        mTimerActive = true;
         collider.enabled = false;
         anim.gameObject.SetActive(false);
     }
 
     public void Activate() {
+        mTimerActive = true;
         mCurDelay = deathDelay;
 
         if(mHUD) {
             mHUD.bombTimerAttach.gameObject.SetActive(true);
         }
+    }
+
+    public void StopTimer() {
+        mTimerActive = false;
+
+        mHUD.bombTimerAttach.gameObject.SetActive(false);
+        mHUD.bombOffScreen.gameObject.SetActive(false);
+        mHUD.bombOffScreenExit.gameObject.SetActive(false);
     }
 
     void OnDisable() {
@@ -63,6 +75,8 @@ public class BombController : MonoBehaviour {
 
         mHUD.bombOffScreen.SetPOI(transform);
         mHUD.bombOffScreenExit.SetPOI(mExitGO.transform);
+
+        mTimerActive = true;
     }
 
     // Use this for initialization
@@ -92,13 +106,15 @@ public class BombController : MonoBehaviour {
                 countLabel = mHUD.bombOffScreenLabel;
         }
 
-        countLabel.text = Mathf.CeilToInt(mCurDelay).ToString();
+        if(mTimerActive) {
+            countLabel.text = Mathf.CeilToInt(mCurDelay).ToString();
 
-        if(mCurDelay > 0.0f) {
-            mCurDelay = Mathf.Clamp(mCurDelay - Time.deltaTime*0.7f, 0.0f, deathDelay);
-                        
-            if(mCurDelay <= 0.0f && deathCallback != null)
-                deathCallback(this);
+            if(mCurDelay > 0.0f) {
+                mCurDelay = Mathf.Clamp(mCurDelay - Time.deltaTime * 0.7f, 0.0f, deathDelay);
+
+                if(mCurDelay <= 0.0f && deathCallback != null)
+                    deathCallback(this);
+            }
         }
     }
 }

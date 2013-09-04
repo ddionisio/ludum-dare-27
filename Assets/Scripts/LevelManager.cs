@@ -12,26 +12,69 @@ public class LevelManager : MonoBehaviour {
 
         private int mStageInd = -1;
         private int mInd = -1;
+        private int mNumDeath = -1;
+
+        private bool mIsNewTime;
+        private bool mIsNewDeath;
+        private bool mIsNewStar;
 
         public int stage { get { return mStageInd; } }
         public int level { get { return mInd; } }
 
         public bool completed { get { return mStars >= 0; } }
         public float time { get { return mTime; } }
-        public int stars { get { return completed ? mTime < parTime ? mStars + 1 : mStars : 0; } }
+        public int deathCount { get { return mNumDeath; } }
+        public int stars {
+            get {
+                if(completed) {
+                    int ret = mStars;
+
+                    if(mTime < parTime)
+                        ret++;
+
+                    if(mNumDeath == 0)
+                        ret++;
+
+                    return ret;
+                }
+                else
+                    return 0;
+            }
+        }
+
+        /// <summary>
+        /// After completing this level, is this the new best time?
+        /// </summary>
+        public bool isNewTime { get { return mIsNewTime; } }
+
+        /// <summary>
+        /// After completing this level, is this the new best death?
+        /// </summary>
+        public bool isNewDeath { get { return mIsNewDeath; } }
+
+        /// <summary>
+        /// After completing this level, is this the new best time?
+        /// </summary>
+        public bool isNewStar { get { return mIsNewStar; } }
 
         public string key { get { return string.Format("level{0}_{1}", mStageInd, mInd); } }
 
         public string userKey { get { return string.Format("l{0}_{1}", mStageInd, mInd); } }
 
-        public string timeText { get { return completed ? GetTimeText(mTime) : "***.**"; } }
+        public string timeText { get { return completed ? GetTimeText(mTime) : "---.--"; } }
 
         public string parTimeText { get { return GetTimeText(parTime); } }
 
-        public string levelText {
+        public string levelTextTitle {
             get {
                 //1 - 999.99 : 999.99
-                return string.Format("{0} - {1} : {2}", mInd + 1, timeText, parTimeText);
+                return string.Format("{0}. {1}", mInd + 1, GameLocalize.GetText(key));
+            }
+        }
+
+        public string levelTextInfo {
+            get {
+                return string.Format("{0} : {1}", timeText, parTimeText);
             }
         }
 
@@ -41,26 +84,38 @@ public class LevelManager : MonoBehaviour {
 
             mTime = UserData.instance.GetFloat(userKey + "t", 99999.0f);
             mStars = UserData.instance.GetInt(userKey + "s", -1);
+            mNumDeath = UserData.instance.GetInt(userKey + "d", -1);
         }
 
-        public void Complete(float timeElapsed, int starsCollected) {
+        public void Complete(float timeElapsed, int starsCollected, int numDeath) {
             if(mStageInd >= 0 && mInd >= 0) {
-                mTime = timeElapsed;
-                mStars = starsCollected;
+                mIsNewTime = timeElapsed < mTime;
+                if(mIsNewTime) {
+                    mTime = timeElapsed;
+                    UserData.instance.SetFloat(userKey + "t", timeElapsed);
+                }
 
-                UserData.instance.SetFloat(userKey + "t", timeElapsed);
-                UserData.instance.SetInt(userKey + "s", starsCollected);
+                mIsNewStar = mStars < starsCollected;
+                if(mIsNewStar) {
+                    mStars = starsCollected;
+                    UserData.instance.SetInt(userKey + "s", starsCollected);
+                }
+
+                mIsNewDeath = mNumDeath == -1 || numDeath < mNumDeath;
+                if(mIsNewDeath) {
+                    mNumDeath = numDeath;
+                    UserData.instance.SetInt(userKey + "d", numDeath);
+                }
             }
         }
     }
 
     [System.Serializable]
     public class StageData {
+        public int starRequire = 0;
         public LevelData[] levels;
 
         private int mStageInd = -1;
-
-        private bool mUnlocked;
 
         public int stage { get { return mStageInd; } }
 
@@ -83,7 +138,11 @@ public class LevelManager : MonoBehaviour {
 
         public string desc { get { return GameLocalize.GetText(string.Format("stage_{0}_desc", stage)); } }
 
-        public bool unlocked { get { return mUnlocked; } }
+        public bool unlocked {
+            get {
+                return LevelManager.instance.mTotalStars >= starRequire;
+            }
+        }
 
         public void Load(StageData prevStage, int stageInd) {
             mStageInd = stageInd;
@@ -91,15 +150,20 @@ public class LevelManager : MonoBehaviour {
             for(int i = 0; i < levels.Length; i++) {
                 levels[i].Load(stageInd, i);
             }
-
-            mUnlocked = prevStage == null || (prevStage.levels.Length > 0 && prevStage.completed == prevStage.levels.Length);
         }
     }
+
+    public float scorePerStar = 1000.0f;
+    public float scorePerLevelComplete = 200.0f;
+    public float scorePerUnderParSecond = 500.0f;
 
     public StageData[] stages;
 
     private int mCurStage;
     private int mCurLevel;
+
+    private int mTotalStars = 0;
+    private float mHiScore = 0;
 
     private static LevelManager mInstance;
 
@@ -143,6 +207,9 @@ public class LevelManager : MonoBehaviour {
         }
     }
 
+    public int totalScore { get { return Mathf.RoundToInt(mHiScore); } }
+    public int totalStars { get { return mTotalStars; } }
+
     public static string GetTimeText(float time) {
         int centi = Mathf.FloorToInt((time - Mathf.Floor(time)) * 100.0f);
         int sec = Mathf.FloorToInt(time);
@@ -167,25 +234,41 @@ public class LevelManager : MonoBehaviour {
     }
 
     /// <summary>
-    /// Call once level is completed, will load to next scene
+    /// Save data
     /// </summary>
-    public void LevelComplete(float timeElapsed, int starCollected) {
+    public void LevelComplete(float timeElapsed, int starCollected, int numDeath) {
 
-        curLevelData.Complete(timeElapsed, starCollected);
+        curLevelData.Complete(timeElapsed, starCollected, numDeath);
 
-        //next level
-        if(IsCurrentLevelLast()) {
-            curStage = nextStage;
+        ComputeData();
+    }
+
+    /// <summary>
+    /// Call this after LevelComplete when ready to go to next stage, or intermission, or ending
+    /// </summary>
+    public void LevelGotoNext() {
+        //ending?
+        if(mCurStage == stages.Length - 1) {
+            mCurStage = 0;
             mCurLevel = 0;
 
-            //show stage end cutscene?
-
-            Main.instance.sceneManager.LoadScene("levelSelect");
+            Main.instance.sceneManager.LoadScene("ending");
         }
         else {
-            mCurLevel++;
+            //next level
+            if(IsCurrentLevelLast()) {
+                curStage = nextStage;
+                mCurLevel = 0;
 
-            LoadCurrentLevel();
+                //show stage end cutscene?
+
+                LoadCurrentLevel();
+            }
+            else {
+                mCurLevel++;
+
+                LoadCurrentLevel();
+            }
         }
     }
 
@@ -206,6 +289,41 @@ public class LevelManager : MonoBehaviour {
                 stage.Load(prevStage, i);
 
                 prevStage = stage;
+            }
+
+            ComputeData();
+
+#if UNITY_EDITOR
+            string lvlStr = Application.loadedLevelName;
+            int lvlInd = lvlStr.LastIndexOf('l');
+            if(lvlInd > 0) {
+                int midInd = lvlStr.LastIndexOf('_');
+                if(midInd > 0) {
+                    mCurStage = int.Parse(lvlStr.Substring(lvlInd + 1, midInd - lvlInd - 1));
+                    mCurLevel = int.Parse(lvlStr.Substring(midInd + 1, lvlStr.Length - midInd - 1));
+                }
+            }
+#endif
+        }
+    }
+
+    void ComputeData() {
+        mHiScore = 0;
+        mTotalStars = 0;
+
+        foreach(StageData stage in stages) {
+            foreach(LevelData level in stage.levels) {
+                if(level.stars > 0) {
+                    mTotalStars += level.stars;
+                    mHiScore += level.stars * scorePerStar;
+                }
+
+                if(level.time > 0.0f && level.time < level.parTime) {
+                    mHiScore += (level.parTime - level.time) * scorePerUnderParSecond;
+                }
+
+                if(level.completed)
+                    mHiScore += scorePerLevelComplete;
             }
         }
     }

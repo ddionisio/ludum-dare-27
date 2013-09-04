@@ -17,10 +17,17 @@ public class Player : EntityBase {
     private bool mIsGoal;
     private PlayerController mCtrl;
 
+    private int mNumDeath = 0;
     private float mCurTime = 0;
     private bool mTimerActive = false;
 
     private HUD mHUD;
+
+    private Vector3 mCheckPointPos;
+    private Quaternion mCheckPointRot;
+    private Vector3 mCheckPointUp;
+
+    private AnimatorData mAnim;
 
     private M8.ImageEffects.WaveRGB mGameOverFX;
 
@@ -30,10 +37,12 @@ public class Player : EntityBase {
 
     public float curTime { get { return mCurTime; } }
 
+    public int numDeath { get { return mNumDeath; } }
+
     public bool isGoal { get { return mIsGoal; } set { mIsGoal = value; } }
 
     public HUD HUD { get { return mHUD; } }
-            
+
     protected override void StateChanged() {
         switch((State)state) {
             case State.Invalid:
@@ -54,6 +63,22 @@ public class Player : EntityBase {
                     mTimerActive = true;
                     StartCoroutine(Timer());
                 }
+                break;
+
+            case State.Dead:
+                mNumDeath++;
+                mIsGoal = false;
+                break;
+
+            case State.Victory:
+                RemoveInput();
+
+                //save level complete info
+                LevelManager.instance.LevelComplete(mCurTime, mHUD.starsFilled, mNumDeath);
+
+                mAnim.Play("exit");
+
+                mTimerActive = false;
                 break;
         }
     }
@@ -76,27 +101,31 @@ public class Player : EntityBase {
     }
 
     public void GameOver() {
+        state = (int)Player.State.Dead;
+
         StartCoroutine(GameOverDelay());
     }
 
-    public void ExitToScene(string scene) {
-        Main.instance.sceneManager.LoadScene(scene);
-        //start the exit animation
+    public void OpenLevelComplete() {
+        UIModalManager.instance.ModalOpen("levelComplete");
     }
 
     public override void Release() {
         state = (int)State.Invalid;
-                
+
         base.Release();
     }
 
     public override void SpawnFinish() {
+        SetCheckpoint();
+
         //start ai, player control, etc
         state = (int)State.Normal;
     }
 
     protected override void SpawnStart() {
         //initialize some things
+        mAnim.Play("spawn");
     }
 
     protected override void Awake() {
@@ -109,10 +138,12 @@ public class Player : EntityBase {
 
             mHUD = HUD.GetHUD();
 
+            mAnim = GetComponent<AnimatorData>();
+
             base.Awake();
 
             //initialize variables
-            autoSpawnFinish = true;
+            autoSpawnFinish = false;
         }
         else
             DestroyImmediate(gameObject);
@@ -124,6 +155,18 @@ public class Player : EntityBase {
 
         //initialize variables from other sources (for communicating with managers, etc.)
         Main.instance.input.AddButtonCall(0, InputAction.MenuEscape, OnInputMenu);
+    }
+
+    void SetCheckpoint() {
+        mCheckPointPos = mCtrl.body.transform.position;
+        mCheckPointRot = mCtrl.body.transform.rotation;
+        mCheckPointUp = mCtrl.body.gravityController.up;
+    }
+
+    void ApplyCheckpoint() {
+        mCtrl.body.transform.position = mCheckPointPos;
+        mCtrl.body.transform.rotation = mCheckPointRot;
+        mCtrl.body.gravityController.up = mCheckPointUp;
     }
 
     void RemoveInput() {
@@ -140,14 +183,68 @@ public class Player : EntityBase {
     }
 
     IEnumerator GameOverDelay() {
+        WaitForFixedUpdate wait = new WaitForFixedUpdate();
+
         SoundPlayerGlobal.instance.Play("explode");
 
         if(mGameOverFX)
             mGameOverFX.enabled = true;
 
-        yield return new WaitForSeconds(2.0f);
+        Vector2 ampR = mGameOverFX.amplitudeR;
+        Vector2 ampG = mGameOverFX.amplitudeG;
+        Vector2 rgR = mGameOverFX.rangeR;
+        Vector2 rgG = mGameOverFX.rangeG;
 
-        Main.instance.sceneManager.LoadScene(gameoverScene);
+        mGameOverFX.amplitudeR = Vector2.zero;
+        mGameOverFX.amplitudeG = Vector2.zero;
+        mGameOverFX.rangeR = Vector2.zero;
+        mGameOverFX.rangeG = Vector2.zero;
+
+        float delay = 0.5f;
+        float t = 0.0f;
+
+        while(t < delay) {
+            yield return wait;
+
+            t += Time.fixedDeltaTime;
+            if(t > delay) t = delay;
+
+            mGameOverFX.amplitudeR = Vector2.Lerp(Vector2.zero, ampR, t / delay);
+            mGameOverFX.amplitudeG = Vector2.Lerp(Vector2.zero, ampG, t / delay);
+            mGameOverFX.rangeR = Vector2.Lerp(Vector2.zero, rgR, t / delay);
+            mGameOverFX.rangeG = Vector2.Lerp(Vector2.zero, rgG, t / delay);
+        }
+
+        ApplyCheckpoint();
+
+        state = (int)State.Normal;
+
+        yield return new WaitForSeconds(delay);
+
+        t = 0.0f;
+
+        while(t < delay) {
+            yield return wait;
+
+            t += Time.fixedDeltaTime;
+            if(t > delay) t = delay;
+
+            mGameOverFX.amplitudeR = Vector2.Lerp(ampR, Vector2.zero, t / delay);
+            mGameOverFX.amplitudeG = Vector2.Lerp(ampG, Vector2.zero, t / delay);
+            mGameOverFX.rangeR = Vector2.Lerp(rgR, Vector2.zero, t / delay);
+            mGameOverFX.rangeG = Vector2.Lerp(rgG, Vector2.zero, t / delay);
+        }
+
+        if(mGameOverFX) {
+            mGameOverFX.enabled = false;
+
+            mGameOverFX.amplitudeR = ampR;
+            mGameOverFX.amplitudeG = ampG;
+            mGameOverFX.rangeR = rgR;
+            mGameOverFX.rangeG = rgG;
+        }
+
+        //Main.instance.sceneManager.LoadScene(gameoverScene);
     }
 
     IEnumerator Timer() {

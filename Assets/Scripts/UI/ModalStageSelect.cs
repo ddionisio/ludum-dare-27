@@ -19,7 +19,10 @@ public class ModalStageSelect : UIController {
     public tk2dSpriteAnimator planetNext;
 
     public float rotateDelay;
-    //public
+
+    public UILabel hiScoreLabel;
+    public UILabel starMaxLabel;
+    public Transform topTrans;
 
     private MoveState mMoveState = MoveState.None;
 
@@ -35,8 +38,14 @@ public class ModalStageSelect : UIController {
     }
 
     protected override void OnOpen() {
+
         //initialize data based on current stage selected
         ResetData();
+
+        hiScoreLabel.text = string.Format(GameLocalize.GetText("hiscore"), LevelManager.instance.totalScore);
+        starMaxLabel.text = string.Format(GameLocalize.GetText("maxstars"), LevelManager.instance.totalStars);
+
+        NGUILayoutBase.RefreshLate(topTrans);
     }
 
     protected override void OnClose() {
@@ -73,8 +82,12 @@ public class ModalStageSelect : UIController {
         title.text = lvlMgr.curStageData.title;
         title.color = lvlMgr.curStageData.unlocked ? Color.white : lockedColor;
 
-        desc.text = lvlMgr.curStageData.desc;
-        desc.color = lvlMgr.curStageData.unlocked ? Color.white : lockedColor;
+        if(lvlMgr.curStageData.unlocked)
+            desc.text = lvlMgr.curStageData.desc;
+        else
+            desc.text = string.Format(GameLocalize.GetText("stage_locked"), lvlMgr.curStageData.starRequire);
+
+        //desc.color = lvlMgr.curStageData.unlocked ? Color.white : lockedColor;
 
         NGUILayoutBase.RefreshNow(transform);
     }

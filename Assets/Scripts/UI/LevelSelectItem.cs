@@ -2,7 +2,9 @@
 using System.Collections;
 
 public class LevelSelectItem : MonoBehaviour {
-    public UILabel label;
+    public UILabel labelTitle;
+    public UILabel labelInfo;
+
     public UISprite[] stars;
 
     private int mLevel;
@@ -28,7 +30,8 @@ public class LevelSelectItem : MonoBehaviour {
 
         LevelManager lvlMgr = LevelManager.instance;
 
-        label.text = lvlMgr.curStageData.levels[level].levelText;
+        labelTitle.text = lvlMgr.curStageData.levels[level].levelTextTitle;
+        labelInfo.text = lvlMgr.curStageData.levels[level].levelTextInfo;
 
         int numStars = lvlMgr.curStageData.levels[level].stars;
 

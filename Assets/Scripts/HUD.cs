@@ -16,9 +16,13 @@ public class HUD : MonoBehaviour {
 
     public UILabel timerLabel;
 
+    public UISprite timerStar;
+
     public StarItem[] stars;
 
     private int mStarsFilled = 0;
+    private bool mStarTimeChanged;
+    private string mPrevTimerStarSprite;
 
     public static HUD GetHUD() {
         HUD ret = null;
@@ -38,11 +42,23 @@ public class HUD : MonoBehaviour {
             if(star)
                 star.ResetData();
         }
+
+        timerStar.spriteName = mPrevTimerStarSprite;
     }
 
     public void RefreshTimer(float t) {
         if(timerLabel)
             timerLabel.text = LevelManager.GetTimeText(t);
+
+        //check par time
+        if(!mStarTimeChanged) {
+            LevelManager.LevelData lvl = LevelManager.instance.curLevelData;
+
+            if(t > lvl.parTime) {
+                timerStar.spriteName = "icons_star_empty";
+                mStarTimeChanged = true;
+            }
+        }
     }
 
     public void StarFill() {
@@ -57,6 +73,8 @@ public class HUD : MonoBehaviour {
         bombOffScreen.gameObject.SetActive(false);
         bombOffScreenExit.gameObject.SetActive(false);
         targetOffScreen.gameObject.SetActive(false);
+
+        mPrevTimerStarSprite = timerStar.spriteName;
     }
 
     // Use this for initialization
