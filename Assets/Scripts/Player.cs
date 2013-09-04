@@ -26,6 +26,7 @@ public class Player : EntityBase {
     private Vector3 mCheckPointPos;
     private Quaternion mCheckPointRot;
     private Vector3 mCheckPointUp;
+    private Checkpoint mCheckPointLast;
 
     private AnimatorData mAnim;
 
@@ -42,6 +43,24 @@ public class Player : EntityBase {
     public bool isGoal { get { return mIsGoal; } set { mIsGoal = value; } }
 
     public HUD HUD { get { return mHUD; } }
+
+    public void GameOver() {
+        state = (int)Player.State.Dead;
+
+        StartCoroutine(GameOverDelay());
+    }
+
+    public void OpenLevelComplete() {
+        UIModalManager.instance.ModalOpen("levelComplete");
+    }
+
+    public void SetCheckPoint(Checkpoint c) {
+        if(mCheckPointLast)
+            mCheckPointLast.ResetState();
+
+        mCheckPointLast = c;
+        SetCheckpoint(c.point.position);
+    }
 
     protected override void StateChanged() {
         switch((State)state) {
@@ -100,16 +119,6 @@ public class Player : EntityBase {
         base.OnDestroy();
     }
 
-    public void GameOver() {
-        state = (int)Player.State.Dead;
-
-        StartCoroutine(GameOverDelay());
-    }
-
-    public void OpenLevelComplete() {
-        UIModalManager.instance.ModalOpen("levelComplete");
-    }
-
     public override void Release() {
         state = (int)State.Invalid;
 
@@ -117,7 +126,7 @@ public class Player : EntityBase {
     }
 
     public override void SpawnFinish() {
-        SetCheckpoint();
+        SetCheckpoint(mCtrl.body.transform.position);
 
         //start ai, player control, etc
         state = (int)State.Normal;
@@ -157,8 +166,8 @@ public class Player : EntityBase {
         Main.instance.input.AddButtonCall(0, InputAction.MenuEscape, OnInputMenu);
     }
 
-    void SetCheckpoint() {
-        mCheckPointPos = mCtrl.body.transform.position;
+    void SetCheckpoint(Vector3 pos) {
+        mCheckPointPos = pos;
         mCheckPointRot = mCtrl.body.transform.rotation;
         mCheckPointUp = mCtrl.body.gravityController.up;
     }
