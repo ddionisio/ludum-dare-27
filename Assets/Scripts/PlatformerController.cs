@@ -59,7 +59,7 @@ public class PlatformerController : RigidBodyController {
 
     private bool mEyeLocked = true;
     private Vector3 mEyeOrientVel;
-    private bool mLastGround;
+    private bool mLastGround=false;
 
     private bool mWallSticking = false;
     private float mWallStickLastTime = 0.0f;
@@ -131,12 +131,35 @@ public class PlatformerController : RigidBodyController {
 
         mLastGround = false;
         mJump = false;
-        mJumpCounter = 0;
         mJumpingWall = false;
 
         lockDrag = false;
 
         mWallSticking = false;
+    }
+
+    /// <summary>
+    /// Call this if you want to update the camera manually (usu. when you disable this controller but still want camera update)
+    /// </summary>
+    public void UpdateCamera(float deltaTime) {
+        if(_eye != null && mEyeLocked) {
+            Quaternion dirRot = dirHolder.rotation;
+
+            Vector3 pos = dirHolder.position;
+
+            bool posDone = _eye.position == pos;
+            if(!posDone) {
+                _eye.position = Vector3.SmoothDamp(_eye.position, pos, ref mEyeOrientVel, eyePositionDelay, Mathf.Infinity, deltaTime);
+            }
+            else
+                mEyeOrientVel = Vector3.zero;
+
+            bool rotDone = _eye.rotation == dirRot;
+            if(!rotDone) {
+                float step = eyeOrientSpeed * Time.fixedDeltaTime;
+                _eye.rotation = Quaternion.RotateTowards(_eye.rotation, dirRot, step);
+            }
+        }
     }
 
     protected override void WaterEnter() {
@@ -413,22 +436,7 @@ public class PlatformerController : RigidBodyController {
             mJumpingWall = false;
 
         //set eye rotation
-        if(_eye != null && mEyeLocked) {
-            Vector3 pos = dirHolder.position;
-
-            bool posDone = _eye.position == pos;
-            if(!posDone) {
-                _eye.position = Vector3.SmoothDamp(_eye.position, pos, ref mEyeOrientVel, eyePositionDelay, Mathf.Infinity, Time.fixedDeltaTime);
-            }
-            else
-                mEyeOrientVel = Vector3.zero;
-
-            bool rotDone = _eye.rotation == dirRot;
-            if(!rotDone) {
-                float step = eyeOrientSpeed * Time.fixedDeltaTime;
-                _eye.rotation = Quaternion.RotateTowards(_eye.rotation, dirRot, step);
-            }
-        }
+        UpdateCamera(Time.fixedDeltaTime);
 
         base.FixedUpdate();
 
@@ -461,6 +469,9 @@ public class PlatformerController : RigidBodyController {
     }
 
     void OnInputJump(InputManager.Info dat) {
+        if(!enabled)
+            return;
+
         //jumpWall
         if(dat.state == InputManager.State.Pressed) {
             if(isUnderWater || isOnLadder) {

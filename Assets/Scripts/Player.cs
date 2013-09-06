@@ -59,7 +59,15 @@ public class Player : EntityBase {
             mCheckPointLast.ResetState();
 
         mCheckPointLast = c;
-        SetCheckpoint(c.point.position);
+        SetCheckpoint(c.point.position, c.point.up);
+    }
+
+    public void CollectStar(Collider col) {
+        col.enabled = false;
+        AnimatorData anim = col.GetComponent<AnimatorData>();
+        anim.Play("collect");
+
+        mHUD.StarFill();
     }
 
     protected override void StateChanged() {
@@ -126,7 +134,7 @@ public class Player : EntityBase {
     }
 
     public override void SpawnFinish() {
-        SetCheckpoint(mCtrl.body.transform.position);
+        SetCheckpoint(mCtrl.body.transform.position, mCtrl.body.gravityController.up);
 
         //start ai, player control, etc
         state = (int)State.Normal;
@@ -166,16 +174,17 @@ public class Player : EntityBase {
         Main.instance.input.AddButtonCall(0, InputAction.MenuEscape, OnInputMenu);
     }
 
-    void SetCheckpoint(Vector3 pos) {
+    void SetCheckpoint(Vector3 pos, Vector3 up) {
         mCheckPointPos = pos;
         mCheckPointRot = mCtrl.body.transform.rotation;
-        mCheckPointUp = mCtrl.body.gravityController.up;
+        mCheckPointUp = up;
     }
 
     void ApplyCheckpoint() {
         mCtrl.body.transform.position = mCheckPointPos;
         mCtrl.body.transform.rotation = mCheckPointRot;
         mCtrl.body.gravityController.up = mCheckPointUp;
+        mCtrl.body.rigidbody.velocity = Vector3.zero;
     }
 
     void RemoveInput() {

@@ -7,13 +7,14 @@ public class PlayerController : MonoBehaviour {
     public AnimatorData attachAnimator;
 
     public GameObject bomb;
+    public BombGrabber bombGrabber;
     //public float bombTimeRegen = 3.0f;
 
     public float throwAngle = 30;
-    public float throwImpulse = 30;
+    public float throwSpeed = 5;
 
-    public float dropAngle = 60;
-    public float dropImpulse = -20;
+    public float dropAngle = -45;
+    public float dropSpeed = -5;
 
     public float hurtForce = 30.0f;
     public float hurtForceDelay;
@@ -46,9 +47,11 @@ public class PlayerController : MonoBehaviour {
                 if(input) {
                     if(mInputEnabled) {
                         input.AddButtonCall(0, InputAction.Action, OnInputAction);
+                        input.AddButtonCall(0, InputAction.Special, OnInputSpecial);
                     }
                     else {
                         input.RemoveButtonCall(0, InputAction.Action, OnInputAction);
+                        input.RemoveButtonCall(0, InputAction.Special, OnInputSpecial);
                     }
                 }
             }
@@ -59,13 +62,15 @@ public class PlayerController : MonoBehaviour {
 
     public bool hasAttach { get { return attachPoint.gameObject.activeSelf; } }
 
+    public BombController bombCtrl { get { return mBombCtrl; } }
+
     public Player player { get { return mPlayer; } }
 
     bool CheckBombCollideAt(Vector3 pos) {
         return Physics.CheckSphere(pos, (bomb.collider as SphereCollider).radius * 0.5f, bombCollisionCheckMask);
     }
 
-    void DoThrow(Vector3 pos, float impulse, float angle) {
+    void DoThrow(Vector3 pos, float speed, float angle) {
         attachPoint.gameObject.SetActive(false);
         mBody.ResetCollision();
 
@@ -74,21 +79,29 @@ public class PlayerController : MonoBehaviour {
         bomb.transform.position = pos;
         bomb.transform.rotation = attachPoint.rotation;
         bomb.rigidbody.angularVelocity = Vector3.zero;
+        bomb.rigidbody.velocity = Vector3.zero;
 
-        bomb.rigidbody.velocity = mBody.rigidbody.velocity;
+        Vector3 bodyLVel = mBody.localVelocity;
+
+        float velX = mBodySpriteCtrl.isLeft ? bodyLVel.x < 0.0f ? bodyLVel.x : 0.0f : bodyLVel.x > 0.0 ? bodyLVel.x : 0.0f;
+        float velY = mBody.localVelocity.y < 0 ? 0.0f : mBody.localVelocity.y;
+
+        Vector3 newVel = bomb.transform.localToWorldMatrix.MultiplyVector(new Vector3(velX, velY));
 
         bomb.SetActive(true);
         mBombCtrl.Activate();
 
-        if(impulse != 0.0f) {
+        if(speed != 0.0f) {
             Vector3 dir = mBodySpriteCtrl.isLeft ? -mBody.dirHolder.right : mBody.dirHolder.right;
 
             Quaternion rot = Quaternion.AngleAxis(angle, mBodySpriteCtrl.isLeft ? -Vector3.forward : Vector3.forward);
 
             dir = rot * dir;
 
-            bomb.rigidbody.AddForce(dir * impulse, ForceMode.Impulse);
+            newVel += dir * speed;
         }
+
+        bomb.rigidbody.AddForce(newVel, ForceMode.VelocityChange);
 
         StopCoroutine("DoBombCorrection");
         StartCoroutine(DoBombCorrection(mBody.gravityController.up));
@@ -98,6 +111,9 @@ public class PlayerController : MonoBehaviour {
             bombSpr.FlipX = mBodySpriteCtrl.isLeft;
 
         mPlayer.HUD.targetOffScreen.gameObject.SetActive(false);
+
+        if(bombGrabber)
+            bombGrabber.gameObject.SetActive(true);
     }
 
     IEnumerator DoBombCorrection(Vector3 up) {
@@ -111,7 +127,7 @@ public class PlayerController : MonoBehaviour {
 
     public void ThrowAttach() {
         if(!CheckBombCollideAt(attachPoint.position))
-            DoThrow(attachPoint.position, throwImpulse, throwAngle);
+            DoThrow(attachPoint.position, throwSpeed, throwAngle);
         else
             attachAnimator.Stop();
     }
@@ -133,7 +149,10 @@ public class PlayerController : MonoBehaviour {
                 dropAngle += 90.0f;
             }
 
-            DoThrow(pos, dropImpulse, dropAngle);
+            DoThrow(pos, dropSpeed, dropAngle);
+        }
+        else {
+            bombGrabber.Revert();
         }
     }
 
@@ -146,6 +165,9 @@ public class PlayerController : MonoBehaviour {
 
         if(bomb)
             bomb.SetActive(false);
+
+        if(bombGrabber)
+            bombGrabber.gameObject.SetActive(false);
 
         if(attachSpriteAnim)
             attachSpriteAnim.Play("bomb");
@@ -195,6 +217,9 @@ public class PlayerController : MonoBehaviour {
     public void ResetData() {
         StopCoroutine("DoHurtForce");
         StopCoroutine("DoBombCorrection");
+
+        if(bombGrabber)
+            bombGrabber.gameObject.SetActive(false);
 
         if(attachPoint)
             attachPoint.gameObject.SetActive(true);
@@ -261,11 +286,6 @@ public class PlayerController : MonoBehaviour {
         mTargetGO = GameObject.FindGameObjectWithTag("Goal");
     }
 
-    // Use this for initialization
-    void Start() {
-
-    }
-
     // Update is called once per frame
     void Update() {
         /*if(hasAttach && mBombCtrl.curDelay < mBombCtrl.deathDelay) {
@@ -280,13 +300,33 @@ public class PlayerController : MonoBehaviour {
 
     void OnInputAction(InputManager.Info dat) {
         if(dat.state == InputManager.State.Pressed) {
-            if(hasAttach && !attachAnimator.isPlaying && !CheckBombCollideAt(attachPoint.position)) {
-                attachAnimator.Play(mBodySpriteCtrl.isLeft ? "throwLeft" : "throw");
+            if(hasAttach) {
+                if(!attachAnimator.isPlaying && !CheckBombCollideAt(attachPoint.position))
+                    attachAnimator.Play(mBodySpriteCtrl.isLeft ? "throwLeft" : "throw");
+            }
+            else if(bombGrabber.canGrab) {
+                bombGrabber.Grab();
+            }
+            else if(bombGrabber.grabState != BombGrabber.GrabState.None)
+                bombGrabber.Revert();
+        }
+    }
+
+    void OnInputSpecial(InputManager.Info dat) {
+        if(dat.state == InputManager.State.Pressed) {
+            if(bombGrabber.grabState == BombGrabber.GrabState.None) {
+                int mode = (int)(bombGrabber.mode + 1);
+                if(mode >= (int)BombGrabber.Mode.NumModes)
+                    mode = 0;
+
+                bombGrabber.mode = (BombGrabber.Mode)mode;
             }
         }
     }
 
     void OnPlayerSpawn(EntityBase ent) {
+        bombGrabber.Init(this);
+
         ResetData();
 
         mPlayer.HUD.targetOffScreen.SetPOI(mTargetGO.transform);
@@ -383,26 +423,26 @@ public class PlayerController : MonoBehaviour {
             else if(cp.otherCollider.gameObject == bomb) {
                 //pick up bomb again
                 //can't if we are hurt, bomb dropped at goal, currently animating for some reason.
-                if(!mPlayer.isGoal && (mBodySpriteCtrl.anim.CurrentClip == null || mBodySpriteCtrl.anim.CurrentClip.name != "hurt") && !attachAnimator.isPlaying)
+                if(!mPlayer.isGoal
+                    && (mBodySpriteCtrl.anim.CurrentClip == null || mBodySpriteCtrl.anim.CurrentClip.name != "hurt")
+                    && !attachAnimator.isPlaying
+                    && bombGrabber.grabState == BombGrabber.GrabState.RetractBomb) {
                     BombActive();
+                }
             }
         }
     }
 
     void OnBodyTriggerEnter(RigidBodyController ctrl, Collider col) {
         if(col.gameObject.tag == "Star") {
-            col.enabled = false;
-            AnimatorData anim = col.GetComponent<AnimatorData>();
-            anim.Play("collect");
-
-            mPlayer.HUD.StarFill();
+            mPlayer.CollectStar(col);
         }
     }
 
     void OnBodySpriteAnimFinish(tk2dSpriteAnimator anim, tk2dSpriteAnimationClip clip) {
         if(clip.name == "hurt") {
             mBodySpriteCtrl.animationActive = true;
-            mBody.inputEnabled = true;
+            inputEnabled = true;
         }
     }
 

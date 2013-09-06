@@ -20,6 +20,8 @@ public class HUD : MonoBehaviour {
 
     public StarItem[] stars;
 
+    public GameObject[] grabInfo;
+
     private int mStarsFilled = 0;
     private bool mStarTimeChanged;
     private string mPrevTimerStarSprite;

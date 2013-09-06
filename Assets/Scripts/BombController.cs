@@ -8,6 +8,8 @@ public class BombController : MonoBehaviour {
 
     public tk2dSpriteAnimator anim;
 
+    public GameObject highlightGO;
+
     public event Callback deathCallback;
 
     private float mCurDelay;
@@ -15,6 +17,12 @@ public class BombController : MonoBehaviour {
     private HUD mHUD;
     private GameObject mExitGO;
     private bool mTimerActive = false;
+    private bool mConsumed = false;
+    private float mRadius;
+
+    public float radius { get { return mRadius; } }
+
+    public bool isConsumed { get { return mConsumed; } }
 
     public float curDelay {
         get { return mCurDelay; }
@@ -24,6 +32,7 @@ public class BombController : MonoBehaviour {
     }
 
     public void Init() {
+        mConsumed = false;
         mTimerActive = false;
         mCurDelay = deathDelay;
         collider.enabled = true;
@@ -34,6 +43,7 @@ public class BombController : MonoBehaviour {
     /// Use for goal
     /// </summary>
     public void Consume() {
+        mConsumed = true;
         mTimerActive = true;
         collider.enabled = false;
         anim.gameObject.SetActive(false);
@@ -54,6 +64,12 @@ public class BombController : MonoBehaviour {
         mHUD.bombTimerAttach.gameObject.SetActive(false);
         mHUD.bombOffScreen.gameObject.SetActive(false);
         mHUD.bombOffScreenExit.gameObject.SetActive(false);
+    }
+
+    void OnTriggerEnter(Collider col) {
+        if(col.gameObject.tag == "Star") {
+            Player.instance.CollectStar(col);
+        }
     }
 
     void OnDisable() {
@@ -77,6 +93,8 @@ public class BombController : MonoBehaviour {
         mHUD.bombOffScreenExit.SetPOI(mExitGO.transform);
 
         mTimerActive = true;
+
+        mRadius = (collider as SphereCollider).radius;
     }
 
     // Use this for initialization
@@ -110,7 +128,7 @@ public class BombController : MonoBehaviour {
             countLabel.text = Mathf.CeilToInt(mCurDelay).ToString();
 
             if(mCurDelay > 0.0f) {
-                mCurDelay = Mathf.Clamp(mCurDelay - Time.deltaTime * 0.7f, 0.0f, deathDelay);
+                mCurDelay = Mathf.Clamp(mCurDelay - Time.deltaTime, 0.0f, deathDelay);
 
                 if(mCurDelay <= 0.0f && deathCallback != null)
                     deathCallback(this);

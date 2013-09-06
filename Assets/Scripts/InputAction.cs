@@ -8,4 +8,5 @@ public struct InputAction {
     public const int MenuY = 5;
     public const int MenuAccept = 6;
     public const int MenuEscape = 7;
+    public const int Special = 8;
 }
