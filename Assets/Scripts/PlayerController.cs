@@ -3,6 +3,7 @@ using System.Collections;
 
 public class PlayerController : MonoBehaviour {
     public Transform attachPoint;
+    public Transform throwPoint;
     public tk2dSpriteAnimator attachSpriteAnim;
     public AnimatorData attachAnimator;
 
@@ -60,7 +61,7 @@ public class PlayerController : MonoBehaviour {
 
     public PlatformerController body { get { return mBody; } }
 
-    public bool hasAttach { get { return attachPoint.gameObject.activeSelf; } }
+    public bool hasAttach { get { return !bomb.gameObject.activeSelf; } }
 
     public BombController bombCtrl { get { return mBombCtrl; } }
 
@@ -71,13 +72,12 @@ public class PlayerController : MonoBehaviour {
     }
 
     void DoThrow(Vector3 pos, float speed, float angle) {
-        attachPoint.gameObject.SetActive(false);
         mBody.ResetCollision();
 
         attachSpriteAnim.Play("empty");
 
         bomb.transform.position = pos;
-        bomb.transform.rotation = attachPoint.rotation;
+        bomb.transform.rotation = throwPoint.rotation;
         bomb.rigidbody.angularVelocity = Vector3.zero;
         bomb.rigidbody.velocity = Vector3.zero;
 
@@ -126,16 +126,16 @@ public class PlayerController : MonoBehaviour {
     }
 
     public void ThrowAttach() {
-        if(!CheckBombCollideAt(attachPoint.position))
-            DoThrow(attachPoint.position, throwSpeed, throwAngle);
+        if(!CheckBombCollideAt(throwPoint.position))
+            DoThrow(throwPoint.position, throwSpeed, throwAngle);
         else
             attachAnimator.Stop();
     }
 
     public void DropAttach() {
         if(hasAttach) {
-            Vector3 lpos = mBody.transform.worldToLocalMatrix.MultiplyPoint(attachPoint.position);
-            Vector3 pos = attachPoint.position;
+            Vector3 lpos = mBody.transform.worldToLocalMatrix.MultiplyPoint(throwPoint.position);
+            Vector3 pos = throwPoint.position;
             Matrix4x4 mtx = mBody.transform.localToWorldMatrix;
 
             for(int i = 0; i < 4; i++) {
@@ -157,9 +157,6 @@ public class PlayerController : MonoBehaviour {
     }
 
     public void BombActive() {
-        if(attachPoint)
-            attachPoint.gameObject.SetActive(true);
-
         if(mBody)
             mBody.ResetCollision();
 
@@ -220,9 +217,6 @@ public class PlayerController : MonoBehaviour {
 
         if(bombGrabber)
             bombGrabber.gameObject.SetActive(false);
-
-        if(attachPoint)
-            attachPoint.gameObject.SetActive(true);
 
         foreach(SpriteColorBlink blink in spriteBlinks) {
             if(blink)
@@ -301,7 +295,7 @@ public class PlayerController : MonoBehaviour {
     void OnInputAction(InputManager.Info dat) {
         if(dat.state == InputManager.State.Pressed) {
             if(hasAttach) {
-                if(!attachAnimator.isPlaying && !CheckBombCollideAt(attachPoint.position))
+                if(!attachAnimator.isPlaying && !CheckBombCollideAt(throwPoint.position))
                     attachAnimator.Play(mBodySpriteCtrl.isLeft ? "throwLeft" : "throw");
             }
             else if(bombGrabber.canGrab) {

@@ -463,7 +463,10 @@ public class PlatformerController : RigidBodyController {
         ComputeLocalVelocity();
 
         Vector3 newVel = localVelocity;
-        newVel.y = 0.0f; //cancel 'falling down'
+
+        if(newVel.y < 0.0f)
+            newVel.y = 0.0f; //cancel 'falling down'
+
         newVel = dirHolder.transform.localToWorldMatrix.MultiplyVector(newVel);
         rigidbody.velocity = newVel;
     }

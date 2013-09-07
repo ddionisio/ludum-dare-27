@@ -27,6 +27,7 @@ public class Player : EntityBase {
     private Quaternion mCheckPointRot;
     private Vector3 mCheckPointUp;
     private Checkpoint mCheckPointLast;
+    private GravityFieldBase mCheckPointGravField;
 
     private AnimatorData mAnim;
 
@@ -178,6 +179,7 @@ public class Player : EntityBase {
         mCheckPointPos = pos;
         mCheckPointRot = mCtrl.body.transform.rotation;
         mCheckPointUp = up;
+        mCheckPointGravField = mCtrl.body.gravityController.gravityField;
     }
 
     void ApplyCheckpoint() {
@@ -185,6 +187,9 @@ public class Player : EntityBase {
         mCtrl.body.transform.rotation = mCheckPointRot;
         mCtrl.body.gravityController.up = mCheckPointUp;
         mCtrl.body.rigidbody.velocity = Vector3.zero;
+
+        if(mCheckPointGravField)
+            mCheckPointGravField.Add(mCtrl.body.gravityController);
     }
 
     void RemoveInput() {
