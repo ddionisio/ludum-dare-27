@@ -34,6 +34,8 @@ public class PlayerController : MonoBehaviour {
 
     private GameObject mTargetGO; //goal
 
+    private bool mDoDrop;
+
     private bool mInputEnabled = false;
 
     public bool inputEnabled {
@@ -126,10 +128,41 @@ public class PlayerController : MonoBehaviour {
     }
 
     public void ThrowAttach() {
-        if(!CheckBombCollideAt(throwPoint.position))
-            DoThrow(throwPoint.position, throwSpeed, throwAngle);
-        else
-            attachAnimator.Stop();
+        if(mDoDrop) {
+            float r = mBodySpriteCtrl.isLeft ? Mathf.PI * 0.5f : -Mathf.PI * 0.5f;
+            Vector3 lpos = mBody.transform.worldToLocalMatrix.MultiplyPoint(throwPoint.position);
+
+            //try downward
+            Vector2 p2 = M8.MathUtil.Rotate(lpos, r*2.0f);
+            lpos.x = p2.x; lpos.y = p2.y;
+
+            Matrix4x4 mtx = mBody.transform.localToWorldMatrix;
+            Vector3 pos = mtx.MultiplyPoint(lpos);
+
+            if(!CheckBombCollideAt(pos)) {
+                DoThrow(pos, throwSpeed, -90.0f);
+            }
+            else {
+                int i = 0;
+                for(; i < 3; i++) {
+                    p2 = M8.MathUtil.Rotate(lpos, r);
+                    lpos.x = p2.x; lpos.y = p2.y;
+                    pos = mtx.MultiplyPoint(lpos);
+
+                    if(!CheckBombCollideAt(pos))
+                        break;
+                }
+
+                if(i < 3)
+                    DoThrow(pos, 0.0f, 0.0f);
+            }
+        }
+        else {
+            if(!CheckBombCollideAt(throwPoint.position))
+                DoThrow(throwPoint.position, throwSpeed, throwAngle);
+            else
+                attachAnimator.Stop();
+        }
     }
 
     public void DropAttach() {
@@ -295,8 +328,16 @@ public class PlayerController : MonoBehaviour {
     void OnInputAction(InputManager.Info dat) {
         if(dat.state == InputManager.State.Pressed) {
             if(hasAttach) {
-                if(!attachAnimator.isPlaying && !CheckBombCollideAt(throwPoint.position))
+                if(!attachAnimator.isPlaying) {
+                    //check if dropping
+                    InputManager input = Main.instance.input;
+
+                    float axisY = input.GetAxis(0, InputAction.MoveY);
+
+                    mDoDrop = axisY < -0.1f;
+
                     attachAnimator.Play(mBodySpriteCtrl.isLeft ? "throwLeft" : "throw");
+                }
             }
             else if(bombGrabber.canGrab) {
                 bombGrabber.Grab();
