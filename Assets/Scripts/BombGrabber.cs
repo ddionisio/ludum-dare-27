@@ -61,7 +61,7 @@ public class BombGrabber : MonoBehaviour {
     }
 
     public GrabState grabState { get { return mGrabState; } }
-    public bool canGrab { get { return mGrabState == GrabState.None && mPlayerCtrl.bombCtrl.highlightGO.activeSelf; } }
+    public bool canGrab { get { return mGrabState == GrabState.None && mPlayerCtrl.body.enabled && mPlayerCtrl.bombCtrl.highlightGO.activeSelf; } }
 
     public void Init(PlayerController pc) {
         mPlayerCtrl = pc;
@@ -115,6 +115,7 @@ public class BombGrabber : MonoBehaviour {
             t.gameObject.SetActive(false);
 
         grabLine.gameObject.SetActive(false);
+        modeArrows[(int)mMode].gameObject.SetActive(false);
     }
 
     void OnDisable() {
@@ -172,7 +173,7 @@ public class BombGrabber : MonoBehaviour {
     void OnTriggerStay(Collider col) {
         if(mGrabState == GrabState.None) {
             if(col.transform == mPlayerCtrl.bomb.transform) {
-                if(!ApplyLine(mPlayerCtrl.attachPoint.position)) {
+                if(mPlayerCtrl.body.enabled && mPlayerCtrl.inputEnabled && !ApplyLine(mPlayerCtrl.attachPoint.position)) {
                     mPlayerCtrl.bombCtrl.highlightGO.SetActive(true);
                     modeArrows[(int)mMode].gameObject.SetActive(true);
                 }

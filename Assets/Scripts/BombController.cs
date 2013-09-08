@@ -37,6 +37,8 @@ public class BombController : MonoBehaviour {
         mCurDelay = deathDelay;
         collider.enabled = true;
         anim.gameObject.SetActive(true);
+
+        mCurDelay = deathDelay;
     }
 
     /// <summary>
@@ -47,11 +49,12 @@ public class BombController : MonoBehaviour {
         mTimerActive = true;
         collider.enabled = false;
         anim.gameObject.SetActive(false);
+
+        mCurDelay = deathDelay;
     }
 
     public void Activate() {
         mTimerActive = true;
-        mCurDelay = deathDelay;
 
         if(mHUD) {
             mHUD.bombTimerAttach.gameObject.SetActive(true);
@@ -103,29 +106,21 @@ public class BombController : MonoBehaviour {
     }
 
     void Update() {
-        UILabel countLabel = mHUD.bombTimerCountLabel;
-
         if(Player.instance.isGoal) {
             mHUD.bombTimerAttach.target = mExitGO.transform;
 
             mHUD.bombOffScreen.gameObject.SetActive(false);
             mHUD.bombOffScreenExit.gameObject.SetActive(true);
-
-            if(mHUD.bombOffScreenExit.pointer.gameObject.activeSelf)
-                countLabel = mHUD.bombOffScreenExitLabel;
         }
         else {
             mHUD.bombTimerAttach.target = transform;
 
             mHUD.bombOffScreen.gameObject.SetActive(true);
             mHUD.bombOffScreenExit.gameObject.SetActive(false);
-
-            if(mHUD.bombOffScreen.pointer.gameObject.activeSelf)
-                countLabel = mHUD.bombOffScreenLabel;
         }
 
         if(mTimerActive) {
-            countLabel.text = Mathf.CeilToInt(mCurDelay).ToString();
+            mHUD.UpdateTicker(mCurDelay, deathDelay);
 
             if(mCurDelay > 0.0f) {
                 mCurDelay = Mathf.Clamp(mCurDelay - Time.deltaTime, 0.0f, deathDelay);

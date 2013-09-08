@@ -206,28 +206,29 @@ public class PlayerController : MonoBehaviour {
         mPlayer.HUD.targetOffScreen.gameObject.SetActive(true);
     }
 
-    public bool Hurt(Vector3 dir, bool forceBounce) {
+    public bool Hurt(Vector3 normal, bool forceBounce) {
         if(!mPlayer.isBlinking && mPlayer.state == (int)Player.State.Normal) {
             mPlayer.state = (int)Player.State.Hurt;
 
             SoundPlayerGlobal.instance.Play("hurt");
 
             StopCoroutine("DoHurtForce");
-            StartCoroutine(DoHurtForce(dir));
+            StartCoroutine(DoHurtForce(normal));
 
             return true;
         }
         else if(forceBounce) {
             StopCoroutine("DoHurtForce");
-            StartCoroutine(DoHurtForce(dir));
+            StartCoroutine(DoHurtForce(normal));
         }
 
         return false;
     }
 
-    IEnumerator DoHurtForce(Vector3 dir) {
-        mBody.ResetCollision();
-        mBody.lockDrag = true;
+    IEnumerator DoHurtForce(Vector3 normal) {
+
+        mBody.enabled = false;
+        mBody.rigidbody.velocity = Vector3.zero;
         mBody.rigidbody.drag = 0.0f;
 
         WaitForFixedUpdate wait = new WaitForFixedUpdate();
@@ -236,12 +237,12 @@ public class PlayerController : MonoBehaviour {
         while(t < hurtForceDelay) {
             yield return wait;
 
-            mBody.rigidbody.AddForce(dir * hurtForce);
+            mBody.rigidbody.AddForce(normal * hurtForce);
 
             t += Time.fixedDeltaTime;
         }
 
-        mBody.ResetCollision();
+        mBody.enabled = true;
     }
 
     public void ResetData() {
@@ -273,9 +274,15 @@ public class PlayerController : MonoBehaviour {
         if(mBombCtrl)
             mBombCtrl.Init();
 
-        if(mPlayer.HUD) {
-            if(mPlayer.HUD.targetOffScreen)
-                mPlayer.HUD.targetOffScreen.gameObject.SetActive(false);
+        if(mPlayer) {
+            HUD hud = mPlayer.HUD;
+            if(hud) {
+                if(hud.tickerLabel)
+                    hud.tickerLabel.gameObject.SetActive(false);
+
+                if(hud.targetOffScreen)
+                    hud.targetOffScreen.gameObject.SetActive(false);
+            }
         }
 
         doubleJumpAnim.Stop();
@@ -315,9 +322,10 @@ public class PlayerController : MonoBehaviour {
 
     // Update is called once per frame
     void Update() {
-        /*if(hasAttach && mBombCtrl.curDelay < mBombCtrl.deathDelay) {
-            mBombCtrl.curDelay += bombTimeRegen * Time.deltaTime;
-        }*/
+        if(hasAttach && mBombCtrl.curDelay < mBombCtrl.deathDelay) {
+            mBombCtrl.curDelay += Time.deltaTime;
+            mPlayer.HUD.UpdateTicker(mBombCtrl.curDelay, mBombCtrl.deathDelay);
+        }
 
         if(mPlayer.isGoal) {
             if(mPlayer.HUD.targetOffScreen.gameObject.activeSelf)
@@ -455,7 +463,7 @@ public class PlayerController : MonoBehaviour {
             if(cp.otherCollider.gameObject.tag == "Harm") {
                 Hurt(cp.normal, false);
             }
-            else if(cp.otherCollider.gameObject == bomb) {
+            /*else if(cp.otherCollider.gameObject == bomb) {
                 //pick up bomb again
                 //can't if we are hurt, bomb dropped at goal, currently animating for some reason.
                 if(!mPlayer.isGoal
@@ -464,7 +472,7 @@ public class PlayerController : MonoBehaviour {
                     && bombGrabber.grabState == BombGrabber.GrabState.RetractBomb) {
                     BombActive();
                 }
-            }
+            }*/
         }
     }
 

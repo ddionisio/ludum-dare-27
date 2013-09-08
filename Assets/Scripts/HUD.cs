@@ -3,16 +3,19 @@ using System.Collections;
 
 public class HUD : MonoBehaviour {
 
+    //
     public NGUIAttach bombTimerAttach;
-    public UILabel bombTimerCountLabel;
 
     public NGUIPointAt bombOffScreen;
-    public UILabel bombOffScreenLabel;
 
     public NGUIPointAt bombOffScreenExit;
-    public UILabel bombOffScreenExitLabel;
 
     public NGUIPointAt targetOffScreen;
+
+    //
+    public UILabel tickerLabel;
+
+    public Color[] tickerColors;
 
     public UILabel timerLabel;
 
@@ -22,6 +25,7 @@ public class HUD : MonoBehaviour {
 
     public GameObject[] grabInfo;
 
+    //
     private int mStarsFilled = 0;
     private bool mStarTimeChanged;
     private string mPrevTimerStarSprite;
@@ -46,6 +50,8 @@ public class HUD : MonoBehaviour {
         }
 
         timerStar.spriteName = mPrevTimerStarSprite;
+
+        tickerLabel.gameObject.SetActive(false);
     }
 
     public void RefreshTimer(float t) {
@@ -70,11 +76,23 @@ public class HUD : MonoBehaviour {
         }
     }
 
+    public void UpdateTicker(float curTime, float maxTime) {
+        bool doUpdate = curTime < maxTime;
+        tickerLabel.gameObject.SetActive(doUpdate);
+
+        if(doUpdate) {
+            tickerLabel.text = Mathf.CeilToInt(curTime).ToString();
+            tickerLabel.color = M8.ColorUtil.Lerp(tickerColors, 1.0f - curTime / maxTime);
+        }
+    }
+
     void Awake() {
         bombTimerAttach.gameObject.SetActive(false);
         bombOffScreen.gameObject.SetActive(false);
         bombOffScreenExit.gameObject.SetActive(false);
         targetOffScreen.gameObject.SetActive(false);
+
+        tickerLabel.gameObject.SetActive(false);
 
         mPrevTimerStarSprite = timerStar.spriteName;
     }
