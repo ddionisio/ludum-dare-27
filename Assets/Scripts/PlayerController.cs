@@ -480,6 +480,9 @@ public class PlayerController : MonoBehaviour {
         if(col.gameObject.tag == "Star") {
             mPlayer.CollectStar(col);
         }
+        else if(col.gameObject.tag == "Death") {
+            mPlayer.GameOver();
+        }
     }
 
     void OnBodySpriteAnimFinish(tk2dSpriteAnimator anim, tk2dSpriteAnimationClip clip) {

@@ -14,7 +14,7 @@ public class PlatformerController : RigidBodyController {
     public int jumpCounter = 1;
     public float jumpAirImpulse = 2.5f;
     public float jumpWallImpulse = 5.0f;
-    public float jumpImpulse = 5.0f;
+    public float jumpWallUpImpulse = 4.0f;
     public float jumpWaterForce = 5.0f;
     public float jumpForce = 50.0f;
     public float jumpDelay = 0.15f;
@@ -106,6 +106,8 @@ public class PlatformerController : RigidBodyController {
 
     public int jumpCounterCurrent { get { return mJumpCounter; } }
 
+    public bool isJump { get { return mJump; } }
+
     public bool isJumpWall { get { return mJumpingWall; } }
 
     public bool isWallStick { get { return mWallSticking; } }
@@ -169,9 +171,6 @@ public class PlatformerController : RigidBodyController {
 
     protected override void WaterExit() {
         if(mJump) {
-            if(jumpImpulse > 0.0f)
-                rigidbody.AddForce(dirHolder.up * jumpImpulse, ForceMode.Impulse);
-
             mJumpLastTime = Time.fixedTime;
         }
     }
@@ -422,7 +421,7 @@ public class PlatformerController : RigidBodyController {
             body.AddForce(-mWallStickCollInfo.normal * wallStickForce);
 
             float curT = Time.fixedTime - mWallStickLastTime;
-            if(curT < wallStickUpDelay) {
+            if(curT < wallStickUpDelay && (curT <= jumpReleaseDelay || Main.instance.input.IsDown(0, InputAction.Jump))) {
                 Vector3 upDir = dirRot * Vector3.up;
                 upDir = M8.MathUtil.Slide(upDir, mWallStickCollInfo.normal);
 
@@ -489,7 +488,7 @@ public class PlatformerController : RigidBodyController {
                 rigidbody.drag = airDrag;
 
                 Vector3 impulse = mWallStickCollInfo.normal * jumpWallImpulse;
-                impulse += dirHolder.up * jumpImpulse;
+                impulse += dirHolder.up * jumpWallUpImpulse;
 
                 PrepJumpVel();
                 rigidbody.AddForce(impulse, ForceMode.Impulse);
@@ -509,7 +508,9 @@ public class PlatformerController : RigidBodyController {
                     rigidbody.drag = airDrag;
 
                     PrepJumpVel();
-                    rigidbody.AddForce(dirHolder.up * (isGrounded ? jumpImpulse : jumpAirImpulse), ForceMode.Impulse);
+
+                    if(!isGrounded)
+                        rigidbody.AddForce(dirHolder.up * jumpAirImpulse, ForceMode.Impulse);
 
                     mJumpCounter++;
                     mJumpingWall = false;

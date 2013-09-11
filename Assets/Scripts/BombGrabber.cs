@@ -61,7 +61,9 @@ public class BombGrabber : MonoBehaviour {
     }
 
     public GrabState grabState { get { return mGrabState; } }
-    public bool canGrab { get { return mGrabState == GrabState.None && mPlayerCtrl.body.enabled && mPlayerCtrl.bombCtrl.highlightGO.activeSelf; } }
+    public bool canGrab { 
+        get { return mGrabState == GrabState.None && !mPlayerCtrl.player.isBlinking && mPlayerCtrl.body.enabled && mPlayerCtrl.bombCtrl.highlightGO.activeSelf; } 
+    }
 
     public void Init(PlayerController pc) {
         mPlayerCtrl = pc;
