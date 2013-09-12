@@ -66,6 +66,9 @@ public class PlatformerController : RigidBodyController {
     private CollideInfo mWallStickCollInfo;
     private M8.MathUtil.Side mWallStickSide;
 
+    private bool mIsOnPlatform;
+    private int mIsOnPlatformLayerMask;
+
     public bool inputEnabled {
         get { return mInputEnabled; }
         set {
@@ -138,6 +141,9 @@ public class PlatformerController : RigidBodyController {
         lockDrag = false;
 
         mWallSticking = false;
+
+        mIsOnPlatform = false;
+        mIsOnPlatformLayerMask = 0;
     }
 
     /// <summary>
@@ -162,6 +168,18 @@ public class PlatformerController : RigidBodyController {
                 _eye.rotation = Quaternion.RotateTowards(_eye.rotation, dirRot, step);
             }
         }
+    }
+
+    public void _PlatformSweep(bool isOn, int layer) {
+        if(mIsOnPlatform != isOn) {
+            mIsOnPlatform = isOn;
+            mIsOnPlatformLayerMask = 1 << layer;
+
+            RefreshCollInfo();
+        }
+
+        //if(!isOn && mJump)
+            //mJumpLastTime = Time.fixedTime;
     }
 
     protected override void WaterEnter() {
@@ -266,6 +284,13 @@ public class PlatformerController : RigidBodyController {
     protected override void RefreshCollInfo() {
         base.RefreshCollInfo();
 
+        //bool isGroundColl = (mCollFlags & CollisionFlags.Below) != 0;
+
+        if(mIsOnPlatform) {
+            mCollFlags |= CollisionFlags.Below;
+            mCollGroundLayerMask |= mIsOnPlatformLayerMask;
+        }
+
         bool lastWallStick = mWallSticking;
         mWallSticking = false;
 
@@ -317,8 +342,8 @@ public class PlatformerController : RigidBodyController {
         if(mLastGround != isGrounded) {
             if(!mLastGround) {
                 //Debug.Log("landed");
-                mJump = false;
-                mJumpingWall = false;
+                //mJump = false;
+                //mJumpingWall = false;
                 mJumpCounter = 0;
 
                 if(landCallback != null)

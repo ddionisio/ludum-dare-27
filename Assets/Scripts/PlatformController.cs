@@ -1,11 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class PlatformController : MonoBehaviour {
     public string[] tags;
     public LayerMask layerMask;
 
-    public float velocityAngleDiff = 89.0f;
+    //public float velocityAngleDiff = 89.0f;
     //public float normalAngleDiff = 90.0f;
 
     public enum Dir {
@@ -19,6 +20,9 @@ public class PlatformController : MonoBehaviour {
     public float ofs = 0.01f;
 
     Vector3 mDir;
+
+    HashSet<PlatformerController> mPlatformers = new HashSet<PlatformerController>();
+    HashSet<PlatformerController> mCurPlatformerSweep = new HashSet<PlatformerController>();
 
     bool CheckTags(GameObject go) {
         foreach(string tag in tags) {
@@ -46,6 +50,11 @@ public class PlatformController : MonoBehaviour {
         }
     }
 
+    void OnDisable() {
+        mPlatformers.Clear();
+        mCurPlatformerSweep.Clear();
+    }
+
     void Awake() {
         SetDir();
     }
@@ -71,14 +80,47 @@ public class PlatformController : MonoBehaviour {
             //Vector3 up = go.transform.up;
 
             if(((1 << go.layer) & layerMask) != 0 && CheckTags(go)) {// && Vector3.Angle(up, hit.normal) >= normalAngleDiff) {
-                Vector3 vel = rigidbody.GetPointVelocity(hit.point);
+                Vector3 vel = rigidbody.velocity;// GetPointVelocity(hit.point);
                 if(vel != Vector3.zero) {
-                    if(velocityAngleDiff == 0 || body.velocity == Vector3.zero || Vector3.Angle(go.transform.up, vel) >= velocityAngleDiff) {
+                    PlatformerController ctrl = go.GetComponent<PlatformerController>();
+
+                    bool jumping = ctrl != null && (ctrl.isJump || ctrl.isJumpWall);
+
+                    Vector3 localV = go.transform.worldToLocalMatrix.MultiplyVector(vel);
+                    Vector3 nLocalV = jumping ? new Vector3(0, localV.y > 0 ? localV.y : 0) : new Vector3(localV.x, localV.y < 0 ? localV.y : 0);
+                    Vector3 nWorldV = go.transform.localToWorldMatrix.MultiplyVector(nLocalV);
+                                        
+                    if(jumping) {
+                        if(!mPlatformers.Contains(ctrl))
+                            body.velocity += nWorldV;
+                    }
+                    else {
+                        body.MovePosition(go.transform.position + nWorldV * Time.fixedDeltaTime);
+                    }
+
+                    //body.velocity += go.transform.localToWorldMatrix.MultiplyVector(nLocalV);
+
+                    /*if(velocityAngleDiff == 0 || body.velocity == Vector3.zero || Vector3.Angle(wDir, vel) >= velocityAngleDiff) {
                         body.MovePosition(go.transform.position + vel * Time.fixedDeltaTime);
                         //body.velocity += vel;
+                    }*/
+                                        
+                    if(ctrl && !jumping) {
+                        mCurPlatformerSweep.Add(ctrl);
+                        ctrl._PlatformSweep(true, gameObject.layer);
                     }
                 }
             }
         }
+
+        foreach(PlatformerController ctrl in mPlatformers) {
+            if(!mCurPlatformerSweep.Contains(ctrl))
+                ctrl._PlatformSweep(false, gameObject.layer);
+        }
+
+        HashSet<PlatformerController> prev = mPlatformers;
+        mPlatformers = mCurPlatformerSweep;
+        mCurPlatformerSweep = prev;
+        mCurPlatformerSweep.Clear();
     }
 }

@@ -213,10 +213,10 @@ public class Player : EntityBase {
         if(mGameOverFX)
             mGameOverFX.enabled = true;
 
-        Vector2 ampR = mGameOverFX.amplitudeR;
-        Vector2 ampG = mGameOverFX.amplitudeG;
-        Vector2 rgR = mGameOverFX.rangeR;
-        Vector2 rgG = mGameOverFX.rangeG;
+        Vector2 ampR = new Vector2(0.33f, 0f);
+        Vector2 ampG = new Vector2(1f, 0f);
+        Vector2 rgR = new Vector2(0f, 0.05f);
+        Vector2 rgG = new Vector2(0f, 0.02f);
 
         mGameOverFX.amplitudeR = Vector2.zero;
         mGameOverFX.amplitudeG = Vector2.zero;
