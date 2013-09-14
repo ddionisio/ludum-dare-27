@@ -477,10 +477,16 @@ public class PlayerController : MonoBehaviour {
     }
 
     void OnBodyTriggerEnter(RigidBodyController ctrl, Collider col) {
-        if(col.gameObject.tag == "Star") {
+        if(col.gameObject.CompareTag("Star")) {
             mPlayer.CollectStar(col);
         }
-        else if(col.gameObject.tag == "Death") {
+        else if(col.gameObject.CompareTag("Harm") || col.gameObject.CompareTag("Enemy")) {
+            if(!mPlayer.isBlinking) {
+                Vector2 dir = (mBody.transform.position - col.bounds.center).normalized;
+                Hurt(dir, false);
+            }
+        }
+        else if(col.gameObject.CompareTag("Death")) {
             mPlayer.GameOver();
         }
     }

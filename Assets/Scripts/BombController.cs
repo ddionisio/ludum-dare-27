@@ -70,8 +70,18 @@ public class BombController : MonoBehaviour {
     }
 
     void OnTriggerEnter(Collider col) {
-        if(col.gameObject.tag == "Star") {
+        GameObject go = col.gameObject;
+
+        if(go.CompareTag("Star")) {
             Player.instance.CollectStar(col);
+        }
+        else if(go.CompareTag("Enemy")) {
+            Enemy enemy = M8.Util.GetComponentUpwards<Enemy>(go.transform, true);
+            if(enemy && enemy.FSM)
+                enemy.FSM.SendEvent(EntityEvent.Hit);
+
+            Vector3 n = (transform.position - go.transform.position).normalized;
+            rigidbody.velocity = Vector3.Reflect(rigidbody.velocity, n);
         }
     }
 
