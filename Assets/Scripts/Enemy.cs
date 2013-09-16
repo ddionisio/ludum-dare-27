@@ -7,98 +7,85 @@ public class Enemy : EntityBase {
         Normal,
         Hurt,
         Dead,
-        Reviving
+        Reviving,
+        Attack
     }
 
     public enum BodySpriteState {
-        Invalid = -1,
-        Idle,
-        Move,
+        idle,
+        move
     }
 
     public Collider bodyCollider;
     public bool facePlayer;
     public tk2dSpriteAnimator bodySpriteAnim;
     public tk2dBaseSprite bodySprite;
+    public Transform mover;
 
-    public string bodyClipIdle = "idle";
-    public string bodyClipMove = "move";
+    public EnemyShootController shoot;
+    public float shootCooldown = 1.0f;
+
     public float bodyClipMoveThreshold = 0.015f;
 
-    private int mBodySpriteState = (int)BodySpriteState.Invalid;
-    private float mBodySpriteHorizontal = 0.0f;
+    private BodySpriteState mBodySpriteState = BodySpriteState.idle;
 
     private Transform mPlayerTrans;
     private Transform mBodyTrans;
 
-    private tk2dSpriteAnimationClip mBodyClipIdle;
-    private tk2dSpriteAnimationClip mBodyClipMove;
+    private tk2dSpriteAnimationClip[] mBodySpriteClips;
+    private bool mNormalUpdateActive;
 
-    public float bodySpriteHorizontal {
-        get { return mBodySpriteHorizontal; }
-        set {
-            float delta = value - mBodySpriteHorizontal;
-            if(delta != 0) {
-                mBodySpriteHorizontal = value;
-
-                if(bodySprite) {
-                    bodySprite.FlipX = delta < 0.0f;
-                }
-            }
-        }
-    }
-
-    public int bodySpriteState {
+    public BodySpriteState bodySpriteState {
         get { return mBodySpriteState; }
         set {
-            if(mBodySpriteState != value) {
-                mBodySpriteState = value;
+            //Debug.Log("f: " + value);
 
-                if(!Application.isPlaying)
-                    return;
+            mBodySpriteState = value;
 
-                switch((BodySpriteState)mBodySpriteState) {
-                    case BodySpriteState.Idle:
-                        if(bodySpriteAnim && mBodyClipIdle != null) {
-                            bodySpriteAnim.Play(mBodyClipIdle);
-                        }
-                        break;
+            if(!Application.isPlaying || bodySpriteAnim == null)
+                return;
 
-                    case BodySpriteState.Move:
-                        if(bodySpriteAnim && mBodyClipMove != null) {
-                            bodySpriteAnim.Play(mBodyClipMove);
-                        }
-                        break;
-                }
-            }
+            if(mBodySpriteClips[(int)mBodySpriteState] != null)
+                bodySpriteAnim.Play(mBodySpriteClips[(int)mBodySpriteState]);
         }
     }
 
     protected override void StateChanged() {
+        switch((State)prevState) {
+            case State.Normal:
+                if(shoot)
+                    shoot.shootEnable = false;
+                break;
+        }
+
         switch((State)state) {
+            case State.Normal:
+                if(bodyCollider) {
+                    bodyCollider.enabled = true;
+                    bodyCollider.rigidbody.detectCollisions = true;
+                }
+
+                if(!mNormalUpdateActive)
+                    StartCoroutine(DoNormalMoverUpdate());
+                break;
+
             case State.Dead:
             case State.Reviving:
-                if(bodyCollider)
+                if(bodyCollider) {
+                    bodyCollider.enabled = false;
                     bodyCollider.rigidbody.detectCollisions = false;
+                }
                 //bodyCollider.enabled = false;
-
-                mBodySpriteState = (int)BodySpriteState.Invalid;
                 break;
 
             case State.Invalid:
-                mBodySpriteState = (int)BodySpriteState.Invalid;
-                break;
-
-            default:
-                if(bodyCollider)
-                    bodyCollider.rigidbody.detectCollisions = true;
-                //bodyCollider.enabled = true;
                 break;
         }
     }
 
     public override void Release() {
         state = StateInvalid;
+        mNormalUpdateActive = false;
 
         base.Release();
     }
@@ -131,8 +118,7 @@ public class Enemy : EntityBase {
         base.Awake();
 
         if(bodySpriteAnim != null) {
-            mBodyClipIdle = string.IsNullOrEmpty(bodyClipIdle) ? null : bodySpriteAnim.GetClipByName(bodyClipIdle);
-            mBodyClipMove = string.IsNullOrEmpty(bodyClipMove) ? null : bodySpriteAnim.GetClipByName(bodyClipMove);
+            mBodySpriteClips = M8.tk2dUtil.GetSpriteClips(bodySpriteAnim, typeof(BodySpriteState));
         }
 
         if(bodySprite == null && bodySpriteAnim != null)
@@ -140,6 +126,9 @@ public class Enemy : EntityBase {
 
         if(bodyCollider)
             mBodyTrans = bodyCollider.transform;
+
+        if(shoot)
+            shoot.shootCallback += OnShoot;
     }
 
     // Use this for initialization
@@ -149,15 +138,77 @@ public class Enemy : EntityBase {
         //initialize variables from other sources (for communicating with managers, etc.)
     }
 
-    void Update() {
-        switch((State)state) {
-            case State.Normal:
-                if(facePlayer && bodySprite && mBodyTrans) {
+    void OnShoot(EnemyShootController ctrl) {
+        state = (int)State.Attack;
+    }
+
+    IEnumerator DoNormalMoverUpdate() {
+        mNormalUpdateActive = true;
+
+        WaitForSeconds waitDelay = new WaitForSeconds(0.1f);
+
+        Vector3 lastMoverPos = mover.position;
+
+        float lastShootTime = Time.fixedTime;
+
+        while(true) {
+            yield return waitDelay;
+
+            if((State)state != State.Normal)
+                break;
+
+            if(shoot && !shoot.shootEnable) {
+                if(Time.fixedTime - lastShootTime >= shootCooldown) {
+                    lastShootTime = Time.fixedTime;
+                    shoot.shootEnable = true;
+                }
+            }
+
+            Vector3 moverPos = mover.position;
+            Vector3 delta;
+
+            if(lastMoverPos != moverPos) {
+                delta = moverPos - lastMoverPos;
+
+                delta = mBodyTrans.worldToLocalMatrix.MultiplyVector(delta);
+            }
+            else
+                delta = Vector3.zero;
+
+            lastMoverPos = moverPos;
+
+            //determine animation
+            if(bodySpriteAnim) {
+                if(Mathf.Abs(delta.x) < bodyClipMoveThreshold) {
+                    bodySpriteState = BodySpriteState.idle;
+                }
+                else {
+                    bodySpriteState = BodySpriteState.move;
+                }
+            }
+
+            //determine facing
+            if(bodySprite) {
+                if(facePlayer) {
                     Vector3 dir = mPlayerTrans.transform.position - mBodyTrans.position;
                     dir = mBodyTrans.worldToLocalMatrix.MultiplyVector(dir);
-                    bodySprite.FlipX = dir.x < 0.0f;
+
+                    if(dir.x != 0.0f) {
+                        bodySprite.FlipX = dir.x < 0.0f;
+
+                        if(shoot)
+                            shoot.visionDir.x = dir.x < 0.0f ? -Mathf.Abs(shoot.visionDir.x) : Mathf.Abs(shoot.visionDir.x);
+                    }
                 }
-                break;
+                else if(delta.x != 0.0f) {
+                    bodySprite.FlipX = delta.x < 0.0f;
+
+                    if(shoot)
+                        shoot.visionDir.x = delta.x < 0.0f ? -Mathf.Abs(shoot.visionDir.x) : Mathf.Abs(shoot.visionDir.x);
+                }
+            }
         }
+
+        mNormalUpdateActive = false;
     }
 }

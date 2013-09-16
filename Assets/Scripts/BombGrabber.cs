@@ -175,7 +175,7 @@ public class BombGrabber : MonoBehaviour {
     void OnTriggerStay(Collider col) {
         if(mGrabState == GrabState.None) {
             if(col.transform == mPlayerCtrl.bomb.transform) {
-                if(mPlayerCtrl.body.enabled && mPlayerCtrl.inputEnabled && !ApplyLine(mPlayerCtrl.attachPoint.position)) {
+                if(mPlayerCtrl.body.enabled && mPlayerCtrl.inputEnabled && !mPlayerCtrl.player.isBlinking && !ApplyLine(mPlayerCtrl.attachPoint.position)) {
                     mPlayerCtrl.bombCtrl.highlightGO.SetActive(true);
                     modeArrows[(int)mMode].gameObject.SetActive(true);
                 }

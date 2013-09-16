@@ -73,7 +73,7 @@ public class PlayerController : MonoBehaviour {
         return Physics.CheckSphere(pos, (bomb.collider as SphereCollider).radius * 0.5f, bombCollisionCheckMask);
     }
 
-    void DoThrow(Vector3 pos, float speed, float angle) {
+    void DoThrow(Vector3 pos, float speed, float angle, bool applyBodyVelocity) {
         mBody.ResetCollision();
 
         attachSpriteAnim.Play("empty");
@@ -83,12 +83,18 @@ public class PlayerController : MonoBehaviour {
         bomb.rigidbody.angularVelocity = Vector3.zero;
         bomb.rigidbody.velocity = Vector3.zero;
 
-        Vector3 bodyLVel = mBody.localVelocity;
+        Vector3 newVel;
 
-        float velX = mBodySpriteCtrl.isLeft ? bodyLVel.x < 0.0f ? bodyLVel.x : 0.0f : bodyLVel.x > 0.0 ? bodyLVel.x : 0.0f;
-        float velY = mBody.localVelocity.y < 0 ? 0.0f : mBody.localVelocity.y;
+        if(applyBodyVelocity) {
+            Vector3 bodyLVel = mBody.localVelocity;
 
-        Vector3 newVel = bomb.transform.localToWorldMatrix.MultiplyVector(new Vector3(velX, velY));
+            float velX = mBodySpriteCtrl.isLeft ? bodyLVel.x < 0.0f ? bodyLVel.x : 0.0f : bodyLVel.x > 0.0 ? bodyLVel.x : 0.0f;
+            float velY = mBody.localVelocity.y < 0 ? 0.0f : mBody.localVelocity.y;
+
+            newVel = bomb.transform.localToWorldMatrix.MultiplyVector(new Vector3(velX, velY));
+        }
+        else
+            newVel = Vector3.zero;
 
         bomb.SetActive(true);
         mBombCtrl.Activate();
@@ -133,14 +139,14 @@ public class PlayerController : MonoBehaviour {
             Vector3 lpos = mBody.transform.worldToLocalMatrix.MultiplyPoint(throwPoint.position);
 
             //try downward
-            Vector2 p2 = M8.MathUtil.Rotate(lpos, r*2.0f);
+            Vector2 p2 = M8.MathUtil.Rotate(lpos, r * 2.0f);
             lpos.x = p2.x; lpos.y = p2.y;
 
             Matrix4x4 mtx = mBody.transform.localToWorldMatrix;
             Vector3 pos = mtx.MultiplyPoint(lpos);
 
             if(!CheckBombCollideAt(pos)) {
-                DoThrow(pos, throwSpeed, -90.0f);
+                DoThrow(pos, throwSpeed, -90.0f, true);
             }
             else {
                 int i = 0;
@@ -154,12 +160,12 @@ public class PlayerController : MonoBehaviour {
                 }
 
                 if(i < 3)
-                    DoThrow(pos, 0.0f, 0.0f);
+                    DoThrow(pos, 0.0f, 0.0f, true);
             }
         }
         else {
             if(!CheckBombCollideAt(throwPoint.position))
-                DoThrow(throwPoint.position, throwSpeed, throwAngle);
+                DoThrow(throwPoint.position, throwSpeed, throwAngle, true);
             else
                 attachAnimator.Stop();
         }
@@ -182,7 +188,7 @@ public class PlayerController : MonoBehaviour {
                 dropAngle += 90.0f;
             }
 
-            DoThrow(pos, dropSpeed, dropAngle);
+            DoThrow(pos, dropSpeed, dropAngle, false);
         }
         else {
             bombGrabber.Revert();
@@ -480,7 +486,17 @@ public class PlayerController : MonoBehaviour {
         if(col.gameObject.CompareTag("Star")) {
             mPlayer.CollectStar(col);
         }
-        else if(col.gameObject.CompareTag("Harm") || col.gameObject.CompareTag("Enemy")) {
+        else if(col.gameObject.CompareTag("Enemy")) {
+            if(!mPlayer.isBlinking) {
+                Vector2 dir = (mBody.transform.position - col.bounds.center).normalized;
+                Hurt(dir, false);
+
+                Enemy enemy = M8.Util.GetComponentUpwards<Enemy>(col.transform, true);
+                if(enemy && enemy.state == (int)Enemy.State.Normal && enemy.FSM)
+                    enemy.FSM.SendEvent(EntityEvent.Contact);
+            }
+        }
+        else if(col.gameObject.CompareTag("Harm")) {
             if(!mPlayer.isBlinking) {
                 Vector2 dir = (mBody.transform.position - col.bounds.center).normalized;
                 Hurt(dir, false);
@@ -497,7 +513,7 @@ public class PlayerController : MonoBehaviour {
             inputEnabled = true;
         }
     }
-
+        
     void OnBombDeathCallback(BombController ctrl) {
         mPlayer.GameOver();
     }

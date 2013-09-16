@@ -140,4 +140,9 @@ public class BombController : MonoBehaviour {
             }
         }
     }
+
+    void OnProjectileHit(Projectile.HitInfo info) {
+        Vector2 dir = (transform.position - info.projectile.transform.position).normalized;
+        rigidbody.velocity = Vector3.Reflect(rigidbody.velocity, dir);
+    }
 }
