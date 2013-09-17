@@ -38,6 +38,9 @@ public class PlayerController : MonoBehaviour {
 
     private bool mInputEnabled = false;
 
+    private Vector3 mHurtNormal;
+    private float mHurtForceDelay;
+
     public bool inputEnabled {
         get { return mInputEnabled; }
         set {
@@ -111,7 +114,6 @@ public class PlayerController : MonoBehaviour {
 
         bomb.rigidbody.AddForce(newVel, ForceMode.VelocityChange);
 
-        StopCoroutine("DoBombCorrection");
         StartCoroutine(DoBombCorrection(mBody.gravityController.up));
 
         tk2dBaseSprite bombSpr = bomb.GetComponentInChildren<tk2dBaseSprite>();
@@ -218,42 +220,47 @@ public class PlayerController : MonoBehaviour {
 
             SoundPlayerGlobal.instance.Play("hurt");
 
-            StopCoroutine("DoHurtForce");
-            StartCoroutine(DoHurtForce(normal));
+            bool startHurt = mHurtForceDelay <= 0.0f;
+            mHurtNormal = normal;
+            mHurtForceDelay = hurtForceDelay;
+            if(startHurt)
+                StartCoroutine(DoHurtForce());
 
             return true;
         }
         else if(forceBounce) {
-            StopCoroutine("DoHurtForce");
-            StartCoroutine(DoHurtForce(normal));
+            bool startHurt = mHurtForceDelay <= 0.0f;
+            mHurtNormal = normal;
+            mHurtForceDelay = hurtForceDelay;
+            if(startHurt)
+                StartCoroutine(DoHurtForce());
         }
 
         return false;
     }
 
-    IEnumerator DoHurtForce(Vector3 normal) {
+    IEnumerator DoHurtForce() {
 
         mBody.enabled = false;
         mBody.rigidbody.velocity = Vector3.zero;
         mBody.rigidbody.drag = 0.0f;
 
         WaitForFixedUpdate wait = new WaitForFixedUpdate();
-        float t = 0.0f;
 
-        while(t < hurtForceDelay) {
+        while(mHurtForceDelay > 0.0f) {
             yield return wait;
 
-            mBody.rigidbody.AddForce(normal * hurtForce);
+            mBody.rigidbody.AddForce(mHurtNormal * hurtForce);
 
-            t += Time.fixedDeltaTime;
+            mHurtForceDelay -= Time.fixedDeltaTime;
         }
 
         mBody.enabled = true;
+        mBody.ResetCollision();
     }
 
     public void ResetData() {
-        StopCoroutine("DoHurtForce");
-        StopCoroutine("DoBombCorrection");
+        mHurtForceDelay = 0.0f;
 
         if(bombGrabber)
             bombGrabber.gameObject.SetActive(false);
@@ -292,7 +299,6 @@ public class PlayerController : MonoBehaviour {
         }
 
         doubleJumpAnim.Stop();
-
     }
 
     void OnDestroy() {
@@ -513,7 +519,7 @@ public class PlayerController : MonoBehaviour {
             inputEnabled = true;
         }
     }
-        
+
     void OnBombDeathCallback(BombController ctrl) {
         mPlayer.GameOver();
     }

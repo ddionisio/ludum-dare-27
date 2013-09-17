@@ -35,6 +35,15 @@ public class Enemy : EntityBase {
     private tk2dSpriteAnimationClip[] mBodySpriteClips;
     private bool mNormalUpdateActive;
 
+    public void SetCollisionActive(bool yes) {
+        if(bodyCollider) {
+            bodyCollider.enabled = yes;
+
+            if(bodyCollider.rigidbody)
+                bodyCollider.rigidbody.detectCollisions = yes;
+        }
+    }
+
     public BodySpriteState bodySpriteState {
         get { return mBodySpriteState; }
         set {
@@ -60,10 +69,7 @@ public class Enemy : EntityBase {
 
         switch((State)state) {
             case State.Normal:
-                if(bodyCollider) {
-                    bodyCollider.enabled = true;
-                    bodyCollider.rigidbody.detectCollisions = true;
-                }
+                SetCollisionActive(true);
 
                 if(!mNormalUpdateActive)
                     StartCoroutine(DoNormalMoverUpdate());
@@ -71,11 +77,7 @@ public class Enemy : EntityBase {
 
             case State.Dead:
             case State.Reviving:
-                if(bodyCollider) {
-                    bodyCollider.enabled = false;
-                    bodyCollider.rigidbody.detectCollisions = false;
-                }
-                //bodyCollider.enabled = false;
+                SetCollisionActive(false);
                 break;
 
             case State.Invalid:
@@ -100,6 +102,21 @@ public class Enemy : EntityBase {
         //dealloc here
 
         base.OnDestroy();
+    }
+
+    protected override void ActivatorWakeUp() {
+        base.ActivatorWakeUp();
+
+        if(!doSpawnOnWake) {
+            if(state == (int)State.Normal && !mNormalUpdateActive)
+                StartCoroutine(DoNormalMoverUpdate());
+        }
+    }
+
+    protected override void ActivatorSleep() {
+        base.ActivatorSleep();
+
+        mNormalUpdateActive = false;
     }
 
     public override void SpawnFinish() {
@@ -147,16 +164,11 @@ public class Enemy : EntityBase {
 
         WaitForSeconds waitDelay = new WaitForSeconds(0.1f);
 
-        Vector3 lastMoverPos = mover.position;
+        Vector3 lastMoverPos = mover ? mover.position : transform.position;
 
         float lastShootTime = Time.fixedTime;
 
-        while(true) {
-            yield return waitDelay;
-
-            if((State)state != State.Normal)
-                break;
-
+        while((State)state == State.Normal) {
             if(shoot && !shoot.shootEnable) {
                 if(Time.fixedTime - lastShootTime >= shootCooldown) {
                     lastShootTime = Time.fixedTime;
@@ -164,7 +176,7 @@ public class Enemy : EntityBase {
                 }
             }
 
-            Vector3 moverPos = mover.position;
+            Vector3 moverPos = mover ? mover.position : transform.position;
             Vector3 delta;
 
             if(lastMoverPos != moverPos) {
@@ -207,6 +219,8 @@ public class Enemy : EntityBase {
                         shoot.visionDir.x = delta.x < 0.0f ? -Mathf.Abs(shoot.visionDir.x) : Mathf.Abs(shoot.visionDir.x);
                 }
             }
+
+            yield return waitDelay;
         }
 
         mNormalUpdateActive = false;
