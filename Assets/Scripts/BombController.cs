@@ -76,9 +76,13 @@ public class BombController : MonoBehaviour {
             Player.instance.CollectStar(col);
         }
         else if(go.CompareTag("Enemy")) {
-            Enemy enemy = M8.Util.GetComponentUpwards<Enemy>(go.transform, true);
-            if(enemy && enemy.FSM)
-                enemy.FSM.SendEvent(EntityEvent.Hit);
+            //only hit enemy if player is not hurt
+            Player player = Player.instance;
+            if(player.state != (int)Player.State.Hurt) {
+                Enemy enemy = M8.Util.GetComponentUpwards<Enemy>(go.transform, true);
+                if(enemy && enemy.FSM)
+                    enemy.FSM.SendEvent(EntityEvent.Hit);
+            }
 
             Vector3 n = (transform.position - go.transform.position).normalized;
             rigidbody.velocity = Vector3.Reflect(rigidbody.velocity, n);

@@ -22,6 +22,8 @@ public class Enemy : EntityBase {
     public tk2dBaseSprite bodySprite;
     public Transform mover;
 
+    public bool attackUseNormalUpdate = false;
+
     public EnemyShootController shoot;
     public float shootCooldown = 1.0f;
 
@@ -34,6 +36,8 @@ public class Enemy : EntityBase {
 
     private tk2dSpriteAnimationClip[] mBodySpriteClips;
     private bool mNormalUpdateActive;
+
+    public Transform playerTransform { get { return mPlayerTrans; } }
 
     public void SetCollisionActive(bool yes) {
         if(bodyCollider) {
@@ -59,15 +63,16 @@ public class Enemy : EntityBase {
         }
     }
 
-    protected override void StateChanged() {
-        switch((State)prevState) {
-            case State.Normal:
-                if(shoot)
-                    shoot.shootEnable = false;
-                break;
-        }
-
+    void ApplyState() {
         switch((State)state) {
+            case State.Attack:
+                SetCollisionActive(true);
+
+                if(attackUseNormalUpdate && !mNormalUpdateActive) {
+                    StartCoroutine(DoNormalMoverUpdate());
+                }
+                break;
+
             case State.Normal:
                 SetCollisionActive(true);
 
@@ -83,6 +88,17 @@ public class Enemy : EntityBase {
             case State.Invalid:
                 break;
         }
+    }
+
+    protected override void StateChanged() {
+        switch((State)prevState) {
+            case State.Normal:
+                if(shoot)
+                    shoot.shootEnable = false;
+                break;
+        }
+
+        ApplyState();
     }
 
     public override void Release() {
@@ -107,10 +123,7 @@ public class Enemy : EntityBase {
     protected override void ActivatorWakeUp() {
         base.ActivatorWakeUp();
 
-        if(!doSpawnOnWake) {
-            if(state == (int)State.Normal && !mNormalUpdateActive)
-                StartCoroutine(DoNormalMoverUpdate());
-        }
+        ApplyState();
     }
 
     protected override void ActivatorSleep() {
@@ -126,9 +139,7 @@ public class Enemy : EntityBase {
 
     protected override void SpawnStart() {
         //initialize some things
-        if(facePlayer) {
-            mPlayerTrans = Player.instance.controller.body.transform;
-        }
+        mPlayerTrans = Player.instance.controller.body.transform;
     }
 
     protected override void Awake() {
@@ -168,7 +179,7 @@ public class Enemy : EntityBase {
 
         float lastShootTime = Time.fixedTime;
 
-        while((State)state == State.Normal) {
+        while((State)state == State.Normal || ((State)state == State.Attack && attackUseNormalUpdate)) {
             if(shoot && !shoot.shootEnable) {
                 if(Time.fixedTime - lastShootTime >= shootCooldown) {
                     lastShootTime = Time.fixedTime;

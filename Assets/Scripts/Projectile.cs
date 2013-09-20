@@ -28,11 +28,9 @@ public class Projectile : EntityBase {
 
     public float force;
 
+    public float seekStartDelay = 0.0f;
     public float seekVelocity;
-
-    public float maxSpeed = 10.0f;
-
-    public float seekDelay = 0.0f;
+    public float seekVelocityCap = 5.0f;
     public float seekAngleCap = 360.0f;
 
     public float decayDelay;
@@ -113,10 +111,10 @@ public class Projectile : EntityBase {
         else {
             Invoke("OnDecayEnd", decayDelay);
 
-            if(seekDelay > 0.0f) {
+            if(seekStartDelay > 0.0f) {
                 state = (int)State.Active;
 
-                Invoke("OnSeekStart", seekDelay);
+                Invoke("OnSeekStart", seekStartDelay);
             }
             else {
                 OnSeekStart();
@@ -272,7 +270,7 @@ public class Projectile : EntityBase {
                             _dir = M8.MathUtil.DirCap(rigidbody.velocity.normalized, _dir, seekAngleCap);
                         }
 
-                        Vector3 force = M8.MathUtil.Steer(rigidbody.velocity, _dir * maxSpeed, seekVelocity, 1.0f);
+                        Vector3 force = M8.MathUtil.Steer(rigidbody.velocity, _dir * seekVelocity, seekVelocityCap, 1.0f);
                         rigidbody.AddForce(force, ForceMode.VelocityChange);
                     }
                 }
