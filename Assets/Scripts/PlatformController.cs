@@ -69,19 +69,20 @@ public class PlatformController : MonoBehaviour {
 #if UNITY_EDITOR
         SetDir();
 #endif
+        Vector3 vel = rigidbody.velocity;// GetPointVelocity(hit.point);
 
-        Vector3 wDir = transform.rotation*mDir;
+        if(vel != Vector3.zero) {
+            Vector3 wDir = transform.rotation * mDir;
 
-        RaycastHit[] hits = rigidbody.SweepTestAll(wDir, ofs);
+            RaycastHit[] hits = rigidbody.SweepTestAll(wDir, ofs);
 
-        foreach(RaycastHit hit in hits) {
-            GameObject go = hit.collider.gameObject;
-            Rigidbody body = go.rigidbody;
-            //Vector3 up = go.transform.up;
+            foreach(RaycastHit hit in hits) {
+                GameObject go = hit.collider.gameObject;
+                Rigidbody body = go.rigidbody;
+                //Vector3 up = go.transform.up;
 
-            if(((1 << go.layer) & layerMask) != 0 && CheckTags(go)) {// && Vector3.Angle(up, hit.normal) >= normalAngleDiff) {
-                Vector3 vel = rigidbody.velocity;// GetPointVelocity(hit.point);
-                if(vel != Vector3.zero) {
+                if(((1 << go.layer) & layerMask) != 0 && CheckTags(go)) {// && Vector3.Angle(up, hit.normal) >= normalAngleDiff) {
+
                     PlatformerController ctrl = go.GetComponent<PlatformerController>();
 
                     bool jumping = ctrl != null && (ctrl.isJump || ctrl.isJumpWall);
@@ -89,7 +90,7 @@ public class PlatformController : MonoBehaviour {
                     Vector3 localV = go.transform.worldToLocalMatrix.MultiplyVector(vel);
                     Vector3 nLocalV = jumping ? new Vector3(0, localV.y > 0 ? localV.y : 0) : new Vector3(localV.x, localV.y < 0 ? localV.y : 0);
                     Vector3 nWorldV = go.transform.localToWorldMatrix.MultiplyVector(nLocalV);
-                                        
+
                     if(jumping) {
                         if(!mPlatformers.Contains(ctrl))
                             body.velocity += nWorldV;
@@ -104,7 +105,7 @@ public class PlatformController : MonoBehaviour {
                         body.MovePosition(go.transform.position + vel * Time.fixedDeltaTime);
                         //body.velocity += vel;
                     }*/
-                                        
+
                     if(ctrl && !jumping) {
                         mCurPlatformerSweep.Add(ctrl);
                         ctrl._PlatformSweep(true, gameObject.layer);

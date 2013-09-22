@@ -26,6 +26,14 @@ public class PlayerController : MonoBehaviour {
     public SpriteColorBlink[] spriteBlinks;
 
     public LayerMask bombCollisionCheckMask;
+    public LayerMask bodyPenetrateCheckMask;
+    public float bodyPenetrateOfs;
+
+    private enum ThrowMode {
+        None,
+        Up,
+        Down
+    }
 
     private Player mPlayer;
     private PlatformerController mBody;
@@ -34,7 +42,7 @@ public class PlayerController : MonoBehaviour {
 
     private GameObject mTargetGO; //goal
 
-    private bool mDoDrop;
+    private ThrowMode mThrowMode = ThrowMode.None;
 
     private bool mInputEnabled = false;
 
@@ -136,40 +144,50 @@ public class PlayerController : MonoBehaviour {
     }
 
     public void ThrowAttach() {
-        if(mDoDrop) {
-            float r = mBodySpriteCtrl.isLeft ? Mathf.PI * 0.5f : -Mathf.PI * 0.5f;
-            Vector3 lpos = mBody.transform.worldToLocalMatrix.MultiplyPoint(throwPoint.position);
+        switch(mThrowMode) {
+            case ThrowMode.None:
+                if(!CheckBombCollideAt(throwPoint.position))
+                    DoThrow(throwPoint.position, throwSpeed, throwAngle, true);
+                else
+                    attachAnimator.Stop();
+                break;
 
-            //try downward
-            Vector2 p2 = M8.MathUtil.Rotate(lpos, r * 2.0f);
-            lpos.x = p2.x; lpos.y = p2.y;
+            case ThrowMode.Up:
+                if(!CheckBombCollideAt(throwPoint.position))
+                    DoThrow(throwPoint.position, throwSpeed, 90.0f, true);
+                else
+                    attachAnimator.Stop();
+                break;
 
-            Matrix4x4 mtx = mBody.transform.localToWorldMatrix;
-            Vector3 pos = mtx.MultiplyPoint(lpos);
+            case ThrowMode.Down:
+                float r = mBodySpriteCtrl.isLeft ? Mathf.PI * 0.5f : -Mathf.PI * 0.5f;
+                Vector3 lpos = mBody.transform.worldToLocalMatrix.MultiplyPoint(throwPoint.position);
 
-            if(!CheckBombCollideAt(pos)) {
-                DoThrow(pos, throwSpeed, -90.0f, true);
-            }
-            else {
-                int i = 0;
-                for(; i < 3; i++) {
-                    p2 = M8.MathUtil.Rotate(lpos, r);
-                    lpos.x = p2.x; lpos.y = p2.y;
-                    pos = mtx.MultiplyPoint(lpos);
+                //try downward
+                Vector2 p2 = M8.MathUtil.Rotate(lpos, r * 2.0f);
+                lpos.x = p2.x; lpos.y = p2.y;
 
-                    if(!CheckBombCollideAt(pos))
-                        break;
+                Matrix4x4 mtx = mBody.transform.localToWorldMatrix;
+                Vector3 pos = mtx.MultiplyPoint(lpos);
+
+                if(!CheckBombCollideAt(pos)) {
+                    DoThrow(pos, throwSpeed, -90.0f, true);
                 }
+                else {
+                    int i = 0;
+                    for(; i < 3; i++) {
+                        p2 = M8.MathUtil.Rotate(lpos, r);
+                        lpos.x = p2.x; lpos.y = p2.y;
+                        pos = mtx.MultiplyPoint(lpos);
 
-                if(i < 3)
-                    DoThrow(pos, 0.0f, 0.0f, true);
-            }
-        }
-        else {
-            if(!CheckBombCollideAt(throwPoint.position))
-                DoThrow(throwPoint.position, throwSpeed, throwAngle, true);
-            else
-                attachAnimator.Stop();
+                        if(!CheckBombCollideAt(pos))
+                            break;
+                    }
+
+                    if(i < 3)
+                        DoThrow(pos, 0.0f, 0.0f, true);
+                }
+                break;
         }
     }
 
@@ -298,6 +316,11 @@ public class PlayerController : MonoBehaviour {
             }
         }
 
+        mThrowMode = ThrowMode.None;
+
+        if(attachPoint)
+            attachPoint.localRotation = Quaternion.identity;
+
         doubleJumpAnim.Stop();
     }
 
@@ -343,19 +366,45 @@ public class PlayerController : MonoBehaviour {
             if(mPlayer.HUD.targetOffScreen.gameObject.activeSelf)
                 mPlayer.HUD.targetOffScreen.gameObject.SetActive(false);
         }
+
+        if(mInputEnabled) {
+            //check if dropping
+            InputManager input = Main.instance.input;
+
+            float axisY = input.GetAxis(0, InputAction.MoveY);
+
+            if(axisY < -0.1f)
+                mThrowMode = ThrowMode.Down;
+            else if(axisY > 0.1f)
+                mThrowMode = ThrowMode.Up;
+            else
+                mThrowMode = ThrowMode.None;
+        }
+        else
+            mThrowMode = ThrowMode.None;
+
+        Vector3 a;
+        switch(mThrowMode) {
+            case ThrowMode.None:
+                attachPoint.localRotation = Quaternion.identity;
+                break;
+            case ThrowMode.Down:
+                a = attachPoint.localEulerAngles;
+                a.z = mBodySpriteCtrl.isLeft ? 60 : -60;
+                attachPoint.localEulerAngles = a;
+                break;
+            case ThrowMode.Up:
+                a = attachPoint.localEulerAngles;
+                a.z = mBodySpriteCtrl.isLeft ? -60 : 60;
+                attachPoint.localEulerAngles = a;
+                break;
+        }
     }
 
     void OnInputAction(InputManager.Info dat) {
         if(dat.state == InputManager.State.Pressed) {
             if(hasAttach) {
                 if(!attachAnimator.isPlaying) {
-                    //check if dropping
-                    InputManager input = Main.instance.input;
-
-                    float axisY = input.GetAxis(0, InputAction.MoveY);
-
-                    mDoDrop = axisY < -0.1f;
-
                     attachAnimator.Play(mBodySpriteCtrl.isLeft ? "throwLeft" : "throw");
                 }
             }
@@ -368,7 +417,7 @@ public class PlayerController : MonoBehaviour {
     }
 
     void OnInputSpecial(InputManager.Info dat) {
-        if(dat.state == InputManager.State.Pressed) {
+        /*if(dat.state == InputManager.State.Pressed) {
             if(bombGrabber.grabState == BombGrabber.GrabState.None) {
                 int mode = (int)(bombGrabber.mode + 1);
                 if(mode >= (int)BombGrabber.Mode.NumModes)
@@ -376,7 +425,7 @@ public class PlayerController : MonoBehaviour {
 
                 bombGrabber.mode = (BombGrabber.Mode)mode;
             }
-        }
+        }*/
     }
 
     void OnPlayerSpawn(EntityBase ent) {
@@ -485,6 +534,12 @@ public class PlayerController : MonoBehaviour {
                     BombActive();
                 }
             }*/
+        }
+
+        //check to see if we are squashed...
+        if(mBody.CheckPenetrate(bodyPenetrateOfs, bodyPenetrateCheckMask)) {
+            //die
+            mPlayer.GameOver();
         }
     }
 

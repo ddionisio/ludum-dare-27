@@ -50,19 +50,23 @@ public class BombGrabber : MonoBehaviour {
         set {
             if(mMode != value && mGrabState == GrabState.None) {
                 modeArrows[(int)mMode].gameObject.SetActive(false);
-                mPlayerCtrl.player.HUD.grabInfo[(int)mMode].SetActive(false);
+                SetGrabInfo((int)mMode, false);
 
                 mMode = value;
 
-                mPlayerCtrl.player.HUD.grabInfo[(int)mMode].SetActive(true);
+                SetGrabInfo((int)mMode, true);
                 mHighlightSpr.color = modeHighlightColors[(int)mMode];
             }
         }
     }
 
     public GrabState grabState { get { return mGrabState; } }
-    public bool canGrab { 
-        get { return mGrabState == GrabState.None && !mPlayerCtrl.player.isBlinking && mPlayerCtrl.body.enabled && mPlayerCtrl.bombCtrl.highlightGO.activeSelf; } 
+    public bool canGrab {
+        get { return mGrabState == GrabState.None && !mPlayerCtrl.player.isBlinking && mPlayerCtrl.body.enabled && mPlayerCtrl.bombCtrl.highlightGO.activeSelf; }
+    }
+
+    void SetGrabInfo(int ind, bool visible) {
+        //mPlayerCtrl.player.HUD.grabInfo[ind].SetActive(visible);
     }
 
     public void Init(PlayerController pc) {
@@ -77,7 +81,7 @@ public class BombGrabber : MonoBehaviour {
         mHighlightSpr.color = modeHighlightColors[(int)mMode];
 
         for(int i = 0; i < (int)Mode.NumModes; i++) {
-            pc.player.HUD.grabInfo[i].SetActive(i == (int)mMode);
+            SetGrabInfo(i, i == (int)mMode);
         }
 
         mIsInit = true;

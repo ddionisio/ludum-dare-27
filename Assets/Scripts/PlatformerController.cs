@@ -59,7 +59,7 @@ public class PlatformerController : RigidBodyController {
 
     private bool mEyeLocked = true;
     private Vector3 mEyeOrientVel;
-    private bool mLastGround=false;
+    private bool mLastGround = false;
 
     private bool mWallSticking = false;
     private float mWallStickLastTime = 0.0f;
@@ -179,7 +179,7 @@ public class PlatformerController : RigidBodyController {
         }
 
         //if(!isOn && mJump)
-            //mJumpLastTime = Time.fixedTime;
+        //mJumpLastTime = Time.fixedTime;
     }
 
     protected override void WaterEnter() {
@@ -351,8 +351,8 @@ public class PlatformerController : RigidBodyController {
             }
             else {
                 //falling down?
-                if(mJumpCounter <= 0)
-                    mJumpCounter = 1;
+                /*if(mJumpCounter <= 0)
+                    mJumpCounter = 1;*/
 
                 mJumpLastTime = Time.fixedTime;
             }
@@ -523,6 +523,9 @@ public class PlatformerController : RigidBodyController {
                 mWallSticking = false;
                 mJumpLastTime = Time.fixedTime;
                 //mJumpCounter = Mathf.Clamp(mJumpCounter + 1, 0, jumpCounter);
+
+                if(mJumpCounter <= 0)
+                    mJumpCounter = 1;
 
                 if(jumpCallback != null)
                     jumpCallback(this);
