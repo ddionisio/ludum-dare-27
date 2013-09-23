@@ -29,6 +29,9 @@ public class PlayerController : MonoBehaviour {
     public LayerMask bodyPenetrateCheckMask;
     public float bodyPenetrateOfs;
 
+    public float lookDelay = 1.0f;
+    public float lookOfs = 64.0f / 24.0f;
+
     private enum ThrowMode {
         None,
         Up,
@@ -48,6 +51,10 @@ public class PlayerController : MonoBehaviour {
 
     private Vector3 mHurtNormal;
     private float mHurtForceDelay;
+
+    private float mLastMoveVerticalTime;
+    private float mLastMoveVertical;
+    private bool mVerticalMoveActive;
 
     public bool inputEnabled {
         get { return mInputEnabled; }
@@ -138,6 +145,8 @@ public class PlayerController : MonoBehaviour {
         yield return new WaitForFixedUpdate();
 
         if(bomb) {
+            bomb.rigidbody.detectCollisions = true;
+
             GravityController bombGrav = bomb.GetComponent<GravityController>();
             bombGrav.up = up;
         }
@@ -154,7 +163,7 @@ public class PlayerController : MonoBehaviour {
 
             case ThrowMode.Up:
                 if(!CheckBombCollideAt(throwPoint.position))
-                    DoThrow(throwPoint.position, throwSpeed, 90.0f, true);
+                    DoThrow(throwPoint.position, throwSpeed, 90.0f, false);
                 else
                     attachAnimator.Stop();
                 break;
@@ -171,7 +180,7 @@ public class PlayerController : MonoBehaviour {
                 Vector3 pos = mtx.MultiplyPoint(lpos);
 
                 if(!CheckBombCollideAt(pos)) {
-                    DoThrow(pos, throwSpeed, -90.0f, true);
+                    DoThrow(pos, throwSpeed, -90.0f, false);
                 }
                 else {
                     int i = 0;
@@ -219,14 +228,19 @@ public class PlayerController : MonoBehaviour {
         if(mBody)
             mBody.ResetCollision();
 
-        if(bomb)
+        if(bomb) {
+            bomb.rigidbody.detectCollisions = false;
             bomb.SetActive(false);
+        }
 
         if(bombGrabber)
             bombGrabber.gameObject.SetActive(false);
 
         if(attachSpriteAnim)
             attachSpriteAnim.Play("bomb");
+
+        if(attachAnimator)
+            attachAnimator.Play("default");
 
 
         mPlayer.HUD.targetOffScreen.gameObject.SetActive(true);
@@ -278,6 +292,9 @@ public class PlayerController : MonoBehaviour {
     }
 
     public void ResetData() {
+        mVerticalMoveActive = false;
+        mLastMoveVertical = 0.0f;
+
         mHurtForceDelay = 0.0f;
 
         if(bombGrabber)
@@ -293,8 +310,10 @@ public class PlayerController : MonoBehaviour {
             attachAnimator.Stop();
         }
 
-        if(mBody)
+        if(mBody) {
             mBody.ResetCollision();
+            mBody.eyeOfs = Vector3.zero;
+        }
 
         if(mBodySpriteCtrl)
             mBodySpriteCtrl.ResetAnimation();
@@ -368,17 +387,32 @@ public class PlayerController : MonoBehaviour {
         }
 
         if(mInputEnabled) {
-            //check if dropping
+            //vertical movement
             InputManager input = Main.instance.input;
 
             float axisY = input.GetAxis(0, InputAction.MoveY);
 
-            if(axisY < -0.1f)
+            float moveVertical;
+
+            //check if dropping
+            if(axisY < -0.1f) {
+                moveVertical = Mathf.Sign(axisY);
                 mThrowMode = ThrowMode.Down;
-            else if(axisY > 0.1f)
+            }
+            else if(axisY > 0.1f) {
+                moveVertical = Mathf.Sign(axisY);
                 mThrowMode = ThrowMode.Up;
-            else
+            }
+            else {
+                moveVertical = 0.0f;
                 mThrowMode = ThrowMode.None;
+            }
+
+            if(moveVertical != mLastMoveVertical) {
+                mLastMoveVertical = moveVertical;
+                mLastMoveVerticalTime = Time.time;
+                mVerticalMoveActive = true;
+            }
         }
         else
             mThrowMode = ThrowMode.None;
@@ -399,6 +433,22 @@ public class PlayerController : MonoBehaviour {
                 attachPoint.localEulerAngles = a;
                 break;
         }
+
+        if(mVerticalMoveActive) {
+            if(Time.time - mLastMoveVerticalTime > lookDelay) {
+                if(mLastMoveVertical == 0.0f) {
+                    mBody.eyeOfs.y = 0.0f;
+                }
+                else if(mLastMoveVertical > 0.0f) {
+                    mBody.eyeOfs.y = lookOfs;
+                }
+                else if(mLastMoveVertical < 0.0f) {
+                    mBody.eyeOfs.y = -lookOfs;
+                }
+
+                mVerticalMoveActive = false;
+            }
+        }
     }
 
     void OnInputAction(InputManager.Info dat) {
@@ -407,6 +457,8 @@ public class PlayerController : MonoBehaviour {
                 if(!attachAnimator.isPlaying) {
                     attachAnimator.Play(mBodySpriteCtrl.isLeft ? "throwLeft" : "throw");
                 }
+
+                ThrowAttach();
             }
             else if(bombGrabber.canGrab) {
                 bombGrabber.Grab();
@@ -471,8 +523,6 @@ public class PlayerController : MonoBehaviour {
 
             case Player.State.Dead:
                 ResetData();
-
-                attachAnimator.Stop();
 
                 BombActive();
 
@@ -597,5 +647,9 @@ public class PlayerController : MonoBehaviour {
             doubleJumpAnim.transform.position = mBody.transform.position;// -mBody.transform.up * mBody.collider.bounds.extents.y;
             doubleJumpAnim.Play("boost");
         }
+
+        mLastMoveVertical = 0.0f;
+        mVerticalMoveActive = false;
+        mBody.eyeOfs = Vector3.zero;
     }
 }

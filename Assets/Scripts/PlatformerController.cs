@@ -10,6 +10,7 @@ public class PlatformerController : RigidBodyController {
 
     public float eyeOrientSpeed = 180.0f; //when we lock the eye again, this is the speed to re-orient based on dirHolder
     public float eyePositionDelay = 0.1f; //reposition delay when we lock the eye again
+    public Vector3 eyeOfs;
 
     public int jumpCounter = 1;
     public float jumpAirImpulse = 2.5f;
@@ -153,7 +154,13 @@ public class PlatformerController : RigidBodyController {
         if(_eye != null && mEyeLocked) {
             Quaternion dirRot = dirHolder.rotation;
 
-            Vector3 pos = dirHolder.position;
+            Vector3 pos;// = dirHolder.position + dirHolder.localToWorldMatrix.MultiplyPoint(eyeOfs);
+            if(eyeOfs != Vector3.zero) {
+                pos = dirHolder.position + dirRot*eyeOfs;
+            }
+            else {
+                pos = dirHolder.position;
+            }
 
             bool posDone = _eye.position == pos;
             if(!posDone) {

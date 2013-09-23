@@ -239,6 +239,8 @@ public class BombGrabber : MonoBehaviour {
                                     break;
 
                                 case Mode.Pull:
+                                    mPlayerCtrl.bombCtrl.StopTimer();
+
                                     mPlayerCtrl.bomb.rigidbody.detectCollisions = true;
                                     mPlayerCtrl.bomb.rigidbody.isKinematic = false;
                                     mPlayerCtrl.bomb.rigidbody.velocity = Vector3.zero;

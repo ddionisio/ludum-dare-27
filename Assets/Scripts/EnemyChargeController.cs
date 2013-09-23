@@ -4,12 +4,14 @@ using System.Collections;
 public class EnemyChargeController : MonoBehaviour {
     public enum SeekMode {
         None,
+        Wait,
         Towards,
         Return
     }
 
     public float seekRadius;
     public float seekDelay;
+    public float seekWaitDelay;
 
     public LayerMask seekVisibleMask;
 
@@ -70,7 +72,7 @@ public class EnemyChargeController : MonoBehaviour {
             mLastMoverPos = mEnemy.mover.position;
             mLastMoverRot = mEnemy.mover.rotation;
             mSeekToPos = mPlayer.controller.body.transform.position;
-            mCurSeekMode = SeekMode.Towards;
+            mCurSeekMode = SeekMode.Wait;
             mCurSeekTime = 0.0f;
         }
 
@@ -123,6 +125,16 @@ public class EnemyChargeController : MonoBehaviour {
 
         while(true) {
             switch(mCurSeekMode) {
+                case SeekMode.Wait:
+                    DoOrientation(playerBodyTrans.rotation, Time.fixedDeltaTime);
+
+                    mCurSeekTime += Time.fixedDeltaTime;
+                    if(mCurSeekTime >= seekWaitDelay) {
+                        mCurSeekMode = SeekMode.Towards;
+                        mCurSeekTime = 0.0f;
+                    }
+                    break;
+
                 case SeekMode.Towards:
                     DoOrientation(playerBodyTrans.rotation, Time.fixedDeltaTime);
 
