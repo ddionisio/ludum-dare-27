@@ -26,8 +26,8 @@ public class PlayerController : MonoBehaviour {
     public SpriteColorBlink[] spriteBlinks;
 
     public LayerMask bombCollisionCheckMask;
-    public LayerMask bodyPenetrateCheckMask;
-    public float bodyPenetrateOfs;
+    //public LayerMask bodyPenetrateCheckMask;
+    //public float bodyPenetrateOfs;
 
     public float lookDelay = 1.0f;
     public float lookOfs = 64.0f / 24.0f;
@@ -587,10 +587,10 @@ public class PlayerController : MonoBehaviour {
         }
 
         //check to see if we are squashed...
-        if(mBody.CheckPenetrate(bodyPenetrateOfs, bodyPenetrateCheckMask)) {
+        //if(mBody.CheckPenetrate(bodyPenetrateOfs, bodyPenetrateCheckMask)) {
             //die
-            mPlayer.GameOver();
-        }
+            //mPlayer.GameOver();
+        //}
     }
 
     void OnBodyTriggerEnter(RigidBodyController ctrl, Collider col) {
