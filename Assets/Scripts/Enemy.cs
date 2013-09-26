@@ -22,6 +22,8 @@ public class Enemy : EntityBase {
     public tk2dBaseSprite bodySprite;
     public Transform mover;
 
+    public bool playerJumpKill = false; //can player kill this by jump?
+
     public bool attackUseNormalUpdate = false;
 
     public EnemyShootController shoot;

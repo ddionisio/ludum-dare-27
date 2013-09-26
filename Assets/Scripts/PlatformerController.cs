@@ -108,7 +108,7 @@ public class PlatformerController : RigidBodyController {
         }
     }
 
-    public int jumpCounterCurrent { get { return mJumpCounter; } }
+    public int jumpCounterCurrent { get { return mJumpCounter; } set { mJumpCounter = value; } }
 
     public bool isJump { get { return mJump; } }
 

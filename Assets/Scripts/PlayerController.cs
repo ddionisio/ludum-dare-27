@@ -21,6 +21,8 @@ public class PlayerController : MonoBehaviour {
     public float hurtForceDelay;
     public float hurtInvulDelay = 2.0f;
 
+    public float enemyJumpSpeed = 10.0f;
+
     public AnimatorData doubleJumpAnim;
 
     public SpriteColorBlink[] spriteBlinks;
@@ -588,8 +590,8 @@ public class PlayerController : MonoBehaviour {
 
         //check to see if we are squashed...
         //if(mBody.CheckPenetrate(bodyPenetrateOfs, bodyPenetrateCheckMask)) {
-            //die
-            //mPlayer.GameOver();
+        //die
+        //mPlayer.GameOver();
         //}
     }
 
@@ -598,13 +600,35 @@ public class PlayerController : MonoBehaviour {
             mPlayer.CollectStar(col);
         }
         else if(col.gameObject.CompareTag("Enemy")) {
-            if(!mPlayer.isBlinking) {
-                Vector2 dir = (mBody.transform.position - col.bounds.center).normalized;
-                Hurt(dir, false);
+            Vector3 playerPos = mBody.transform.position;
+            Vector3 enemyPos = col.bounds.center;
+            Vector3 dPos = playerPos - enemyPos;
 
-                Enemy enemy = M8.Util.GetComponentUpwards<Enemy>(col.transform, true);
-                if(enemy && enemy.state == (int)Enemy.State.Normal && enemy.FSM)
-                    enemy.FSM.SendEvent(EntityEvent.Contact);
+            //check if enemy is at bottom
+            Vector3 localDPos = mBody.transform.worldToLocalMatrix.MultiplyVector(dPos);
+            bool isTop = Vector3.Angle(localDPos, Vector3.up) <= 45.0f;
+
+            Enemy enemy = M8.Util.GetComponentUpwards<Enemy>(col.transform, true);
+
+            if(enemy) {
+                //Debug.Log("is top: " + isTop);
+                //kill enemy and have a free jump
+                if(isTop && enemy.playerJumpKill) {
+                    if(enemy.FSM)
+                        enemy.FSM.SendEvent(EntityEvent.Hit);
+
+                    Vector3 localVel = mBody.localVelocity;
+                    localVel.y = enemyJumpSpeed;
+                    mBody.rigidbody.velocity = mBody.transform.rotation * localVel;
+                    mBody.jumpCounterCurrent = 1;
+                }
+                else if(!mPlayer.isBlinking) {
+                    Vector2 dir = dPos.normalized;
+                    Hurt(dir, false);
+
+                    if(enemy.state == (int)Enemy.State.Normal && enemy.FSM)
+                        enemy.FSM.SendEvent(EntityEvent.Contact);
+                }
             }
         }
         else if(col.gameObject.CompareTag("Harm")) {
