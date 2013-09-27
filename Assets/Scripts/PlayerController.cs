@@ -631,7 +631,7 @@ public class PlayerController : MonoBehaviour {
                 }
             }
         }
-        else if(col.gameObject.CompareTag("Harm")) {
+        else if(col.gameObject.CompareTag("Harm") || col.gameObject.CompareTag("Goal")) { //Goal is the big monster thing
             if(!mPlayer.isBlinking) {
                 Vector2 dir = (mBody.transform.position - col.bounds.center).normalized;
                 Hurt(dir, false);
@@ -639,6 +639,12 @@ public class PlayerController : MonoBehaviour {
         }
         else if(col.gameObject.CompareTag("Death")) {
             mPlayer.GameOver();
+        }
+        else if(col.gameObject.CompareTag("TriggerSave")) {
+            TriggerCheckpoint triggerCP = col.GetComponent<TriggerCheckpoint>();
+            if(triggerCP) {
+                mPlayer.AddTriggerCheckpoint(triggerCP);
+            }
         }
     }
 

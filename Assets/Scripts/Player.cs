@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class Player : EntityBase {
     public enum State {
@@ -32,6 +33,9 @@ public class Player : EntityBase {
     private AnimatorData mAnim;
 
     private M8.ImageEffects.WaveRGB mGameOverFX;
+
+    private List<AnimatorData> mLastStarsCollected = new List<AnimatorData>(3);
+    private List<TriggerCheckpoint> mLastTriggers = new List<TriggerCheckpoint>(5);
 
     public static Player instance { get { return mInstance; } }
 
@@ -68,7 +72,13 @@ public class Player : EntityBase {
         AnimatorData anim = col.GetComponent<AnimatorData>();
         anim.Play("collect");
 
+        mLastStarsCollected.Add(anim);
+
         mHUD.StarFill();
+    }
+
+    public void AddTriggerCheckpoint(TriggerCheckpoint trigger) {
+        mLastTriggers.Add(trigger);
     }
 
     protected override void StateChanged() {
@@ -180,6 +190,10 @@ public class Player : EntityBase {
         mCheckPointRot = mCtrl.body.transform.rotation;
         mCheckPointUp = up;
         mCheckPointGravField = mCtrl.body.gravityController.gravityField;
+
+        //clear out undos
+        mLastTriggers.Clear();
+        mLastStarsCollected.Clear();
     }
 
     void ApplyCheckpoint() {
@@ -190,6 +204,23 @@ public class Player : EntityBase {
 
         if(mCheckPointGravField)
             mCheckPointGravField.Add(mCtrl.body.gravityController);
+
+        //reset stars collected
+        foreach(AnimatorData anim in mLastStarsCollected) {
+            anim.collider.enabled = true;
+            anim.PlayDefault();
+        }
+
+        mHUD.StarFillTo(mHUD.starsFilled - mLastStarsCollected.Count);
+
+        mLastStarsCollected.Clear();
+
+        //reset triggers
+        foreach(TriggerCheckpoint trigger in mLastTriggers) {
+            trigger.Revert();
+        }
+
+        mLastTriggers.Clear();
     }
 
     void RemoveInput() {

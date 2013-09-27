@@ -14,7 +14,7 @@ public class BombDropOffTrigger : MonoBehaviour {
         if(col.gameObject.tag == "Bomb") {
             Player player = Player.instance;
 
-            if(player.state != (int)Player.State.Dead) {
+            if(player.state != (int)Player.State.Hurt && player.state != (int)Player.State.Dead) {
                 bool prevGoal = player.isGoal;
 
                 player.isGoal = true;

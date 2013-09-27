@@ -87,6 +87,12 @@ public class BombController : MonoBehaviour {
             Vector3 n = (transform.position - go.transform.position).normalized;
             rigidbody.velocity = Vector3.Reflect(rigidbody.velocity, n);
         }
+        else if(go.CompareTag("TriggerSave")) {
+            TriggerCheckpoint triggerCP = col.GetComponent<TriggerCheckpoint>();
+            if(triggerCP) {
+                Player.instance.AddTriggerCheckpoint(triggerCP);
+            }
+        }
     }
 
     void OnDisable() {

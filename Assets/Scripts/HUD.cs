@@ -69,6 +69,18 @@ public class HUD : MonoBehaviour {
         }
     }
 
+    public void StarFillTo(int amt) {
+        for(int i = 0; i < amt; i++) {
+            stars[i].Fill();
+        }
+
+        for(int i = amt; i < stars.Length; i++) {
+            stars[i].ResetData();
+        }
+
+        mStarsFilled = amt;
+    }
+
     public void StarFill() {
         if(mStarsFilled < stars.Length) {
             stars[mStarsFilled].Fill();
