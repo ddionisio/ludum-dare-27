@@ -34,13 +34,14 @@ public class EnemyChargeController : MonoBehaviour {
     private WaitForFixedUpdate mWait;
     private WaitForSeconds mCheckWait;
     private bool mRestorePosOnRevive;
+    private bool mDefaultFacePlayer;
 
     void ApplyEnemyState() {
         StopAllCoroutines();
 
         switch((Enemy.State)mEnemy.state) {
             case Enemy.State.Normal:
-                mEnemy.facePlayer = false;
+                mEnemy.facePlayer = mDefaultFacePlayer;
                 StartCoroutine(DoCheck());
                 break;
 
@@ -88,6 +89,8 @@ public class EnemyChargeController : MonoBehaviour {
         mEnemy = GetComponent<Enemy>();
 
         mEnemy.setStateCallback += OnEnemyChangeState;
+
+        mDefaultFacePlayer = mEnemy.facePlayer;
 
         if(mEnemy.activator)
             mEnemy.activator.awakeCallback += OnEnemyActivatorWake;
