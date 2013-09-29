@@ -29,6 +29,7 @@ public class PlatformerController : RigidBodyController {
     public float wallStickUpDelay; //how long to move up the wall once you stick
     public float wallStickUpForce; //slightly move up the wall
     public float wallStickForce; //move towards the wall
+    public float wallStickDownSpeedCap = 5.0f; //reduce speed upon sticking to wall if going downward, 'friction'
 
     public string ladderTag = "Ladder";
     public LayerMask ladderLayer;
@@ -334,8 +335,9 @@ public class PlatformerController : RigidBodyController {
 
                 //see if we are moving away
                 if(wallStickExpired && CheckWallStickMoveAway(moveSide)) {
-                    if(!mWallStickWaitInput)
+                    if(!mWallStickWaitInput) {
                         mWallSticking = false;
+                    }
                 }
                 else if(!lastWallStick) {
                     mWallStickWaitInput = true;
@@ -344,8 +346,12 @@ public class PlatformerController : RigidBodyController {
                     //cancel horizontal movement
                     Vector3 newVel = localVelocity;
                     newVel.x = 0.0f;
-                    newVel = dirHolder.transform.localToWorldMatrix.MultiplyVector(newVel);
-                    rigidbody.velocity = newVel;
+
+                    //reduce downward speed
+                    if(newVel.y < -wallStickDownSpeedCap)
+                        newVel.y = -wallStickDownSpeedCap;
+
+                    rigidbody.velocity = dirHolder.rotation * newVel;
                 }
             }
         }
@@ -463,18 +469,30 @@ public class PlatformerController : RigidBodyController {
             mJump = false;
         }
 
+        base.FixedUpdate();
+
         //stick to wall
         if(mWallSticking) {
-            body.AddForce(-mWallStickCollInfo.normal * wallStickForce);
-
-            float curT = Time.fixedTime - mWallStickLastTime;
-            if(curT < wallStickUpDelay && (curT <= jumpReleaseDelay || Main.instance.input.IsDown(0, InputAction.Jump))) {
-                Vector3 upDir = dirRot * Vector3.up;
-                upDir = M8.MathUtil.Slide(upDir, mWallStickCollInfo.normal);
-
-                if(localVelocity.y < airMaxSpeed)
-                    body.AddForce(upDir * wallStickUpForce);
+            //reduce speed falling down
+            if(localVelocity.y < -wallStickDownSpeedCap) {
+                //ComputeLocalVelocity();
+                Vector3 newVel = new Vector3(localVelocity.x, -wallStickDownSpeedCap, localVelocity.z);
+                body.velocity = dirHolder.rotation * newVel;
             }
+            //boost up
+            else if(localVelocity.y >= 0.0f) {
+                float curT = Time.fixedTime - mWallStickLastTime;
+                if(curT <= wallStickUpDelay && (curT <= jumpReleaseDelay || Main.instance.input.IsDown(0, InputAction.Jump))) {
+                    Vector3 upDir = dirRot * Vector3.up;
+                    upDir = M8.MathUtil.Slide(upDir, mWallStickCollInfo.normal);
+
+                    if(localVelocity.y < airMaxSpeed)
+                        body.AddForce(upDir * wallStickUpForce);
+                }
+            }
+
+            //push towards the wall
+            body.AddForce(-mWallStickCollInfo.normal * wallStickForce);
         }
 
         //see if we are jumping wall and falling, then cancel jumpwall
@@ -483,8 +501,6 @@ public class PlatformerController : RigidBodyController {
 
         //set eye rotation
         UpdateCamera(Time.fixedDeltaTime);
-
-        base.FixedUpdate();
 
         if(isOnLadder)
             rigidbody.drag = ladderDrag;
@@ -506,14 +522,14 @@ public class PlatformerController : RigidBodyController {
     }*/
 
     void PrepJumpVel() {
-        ComputeLocalVelocity();
+        //ComputeLocalVelocity();
 
         Vector3 newVel = localVelocity;
 
         if(newVel.y < 0.0f)
             newVel.y = 0.0f; //cancel 'falling down'
 
-        newVel = dirHolder.transform.localToWorldMatrix.MultiplyVector(newVel);
+        newVel = dirHolder.rotation * newVel;
         rigidbody.velocity = newVel;
     }
 
@@ -542,7 +558,9 @@ public class PlatformerController : RigidBodyController {
 
                 mJumpingWall = true;
                 mJump = true;
+
                 mWallSticking = false;
+
                 mJumpLastTime = Time.fixedTime;
                 //mJumpCounter = Mathf.Clamp(mJumpCounter + 1, 0, jumpCounter);
 
@@ -564,7 +582,9 @@ public class PlatformerController : RigidBodyController {
 
                     mJumpCounter++;
                     mJumpingWall = false;
+
                     mWallSticking = false;
+
                     mJump = true;
                     mJumpLastTime = Time.fixedTime;
 

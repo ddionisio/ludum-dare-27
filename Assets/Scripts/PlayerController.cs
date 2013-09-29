@@ -606,7 +606,7 @@ public class PlayerController : MonoBehaviour {
 
             //check if enemy is at bottom
             Vector3 localDPos = mBody.transform.worldToLocalMatrix.MultiplyVector(dPos);
-            bool isTop = Vector3.Angle(localDPos, Vector3.up) <= 45.0f;
+            bool isTop = Vector3.Angle(localDPos, Vector3.up) <= 55.0f;
 
             Enemy enemy = M8.Util.GetComponentUpwards<Enemy>(col.transform, true);
 
