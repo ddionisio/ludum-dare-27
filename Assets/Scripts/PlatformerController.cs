@@ -66,6 +66,7 @@ public class PlatformerController : RigidBodyController {
     private float mWallStickLastTime = 0.0f;
     private CollideInfo mWallStickCollInfo;
     private M8.MathUtil.Side mWallStickSide;
+    private bool mWallStickWaitInput;
 
     private bool mIsOnPlatform;
     private int mIsOnPlatformLayerMask;
@@ -142,6 +143,7 @@ public class PlatformerController : RigidBodyController {
         lockDrag = false;
 
         mWallSticking = false;
+        mWallStickWaitInput = false;
 
         mIsOnPlatform = false;
         mIsOnPlatformLayerMask = 0;
@@ -156,7 +158,7 @@ public class PlatformerController : RigidBodyController {
 
             Vector3 pos;// = dirHolder.position + dirHolder.localToWorldMatrix.MultiplyPoint(eyeOfs);
             if(eyeOfs != Vector3.zero) {
-                pos = dirHolder.position + dirRot*eyeOfs;
+                pos = dirHolder.position + dirRot * eyeOfs;
             }
             else {
                 pos = dirHolder.position;
@@ -331,11 +333,13 @@ public class PlatformerController : RigidBodyController {
                 bool wallStickExpired = Time.fixedTime - mWallStickLastTime > wallStickDelay;
 
                 //see if we are moving away
-                if(wallStickExpired && CheckWallStickMoveAway())
-                    mWallSticking = false;
+                if(wallStickExpired && CheckWallStickMoveAway(moveSide)) {
+                    if(!mWallStickWaitInput)
+                        mWallSticking = false;
+                }
                 else if(!lastWallStick) {
-                    if(wallStickExpired)
-                        mWallStickLastTime = Time.fixedTime;
+                    mWallStickWaitInput = true;
+                    mWallStickLastTime = Time.fixedTime;
 
                     //cancel horizontal movement
                     Vector3 newVel = localVelocity;
@@ -414,7 +418,18 @@ public class PlatformerController : RigidBodyController {
                 //move forward upwards
                 Move(dirRot, Vector3.up, Vector3.right, new Vector2(moveX, moveY), moveForce);
             }
-            else if(!(isSlopSlide || mJumpingWall || (mWallSticking && Time.fixedTime - mWallStickLastTime < wallStickDelay))) {
+            else if(mWallSticking) {
+                if(mWallStickWaitInput) {
+                    if(CheckWallStickMoveAway(moveX)) {
+                        mWallStickWaitInput = false;
+                        mWallStickLastTime = Time.fixedTime;
+                    }
+                }
+                else if(Time.fixedTime - mWallStickLastTime > wallStickDelay) {
+                    moveSide = moveX;
+                }
+            }
+            else if(!(isSlopSlide || mJumpingWall)) {
                 //moveForward = moveY;
                 moveSide = moveX;
             }
@@ -573,7 +588,7 @@ public class PlatformerController : RigidBodyController {
         }
     }
 
-    bool CheckWallStickMoveAway() {
-        return moveSide != 0 && ((moveSide < 0.0f && mWallStickSide == M8.MathUtil.Side.Right) || (moveSide > 0.0f && mWallStickSide == M8.MathUtil.Side.Left));
+    bool CheckWallStickMoveAway(float criteria) {
+        return criteria != 0 && ((criteria < 0.0f && mWallStickSide == M8.MathUtil.Side.Right) || (criteria > 0.0f && mWallStickSide == M8.MathUtil.Side.Left));
     }
 }

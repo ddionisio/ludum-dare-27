@@ -16,8 +16,11 @@ public class PlatformController : MonoBehaviour {
         Right
     }
 
-    public Dir dir;
-    public float ofs = 0.01f;
+    public Dir dir = Dir.Up;
+    public float ofs = 0.15f;
+
+    public bool upDirLimitEnabled = false; //check collider's up dir angle from this platform's dir
+    public float upDirLimit = 15.0f;
 
     Vector3 mDir;
 
@@ -81,7 +84,7 @@ public class PlatformController : MonoBehaviour {
                 Rigidbody body = go.rigidbody;
                 //Vector3 up = go.transform.up;
 
-                if(((1 << go.layer) & layerMask) != 0 && CheckTags(go)) {// && Vector3.Angle(up, hit.normal) >= normalAngleDiff) {
+                if(((1 << go.layer) & layerMask) != 0 && CheckTags(go) && (!upDirLimitEnabled || Vector3.Angle(wDir, hit.transform.up) <= upDirLimit)) {// && Vector3.Angle(up, hit.normal) >= normalAngleDiff) {
 
                     PlatformerController ctrl = go.GetComponent<PlatformerController>();
 
