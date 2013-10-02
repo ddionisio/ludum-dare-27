@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class EnemyShootController : MonoBehaviour {
     public delegate void OnShoot(EnemyShootController ctrl);
@@ -18,8 +19,8 @@ public class EnemyShootController : MonoBehaviour {
     public event OnShoot shootCallback;
 
     private bool mShootEnable;
-    private int mCurCount;
     private Ray mVisionRay;
+    private HashSet<Projectile> mLaunchedProjs = new HashSet<Projectile>();
 
     public bool shootEnable {
         get { return mShootEnable; }
@@ -37,7 +38,7 @@ public class EnemyShootController : MonoBehaviour {
         Projectile proj = Projectile.Create(group, type, pos, dir, target);
 
         if(proj) {
-            mCurCount++;
+            mLaunchedProjs.Add(proj);
             proj.releaseCallback += OnProjRelease;
 
             if(shootCallback != null)
@@ -45,8 +46,20 @@ public class EnemyShootController : MonoBehaviour {
         }
     }
 
+    public void ClearProjectiles() {
+        //release any projectiles that are currently spawning
+        foreach(Projectile proj in mLaunchedProjs) {
+            if(proj && proj.spawning) {
+                proj.Release();
+            }
+        }
+
+        //no longer need to track projectiles
+        mLaunchedProjs.Clear();
+    }
+
     void OnTriggerStay(Collider col) {
-        if(mShootEnable && mCurCount < maxCount) {
+        if(mShootEnable && mLaunchedProjs.Count < maxCount) {
             Vector3 pos = spawnPoint ? spawnPoint.position : transform.position;
             Transform seek = col.transform;
 
@@ -78,8 +91,6 @@ public class EnemyShootController : MonoBehaviour {
     void OnProjRelease(EntityBase ent) {
         ent.releaseCallback -= OnProjRelease;
 
-        mCurCount--;
-        if(mCurCount < 0)
-            mCurCount = 0;
+        mLaunchedProjs.Remove(ent as Projectile);
     }
 }

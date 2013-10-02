@@ -101,6 +101,13 @@ public class Enemy : EntityBase {
         }
 
         ApplyState();
+
+        switch((State)state) {
+            case State.Dead:
+                if(shoot)
+                    shoot.ClearProjectiles();
+                break;
+        }
     }
 
     public override void Release() {

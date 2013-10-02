@@ -58,6 +58,7 @@ public class Projectile : EntityBase {
     private Vector3 mActiveForce;
     private Vector3 mStartDir = Vector3.zero;
     private Transform mSeek = null;
+    private bool mSpawning = false;
 
     //private Vector2 mOscillateDir;
     //private bool mOscillateSwitch;
@@ -79,13 +80,10 @@ public class Projectile : EntityBase {
         }
     }
 
+    public bool spawning { get { return mSpawning; } }
+
     protected override void OnDespawned() {
         CancelInvoke();
-
-        if(rigidbody != null) {
-            rigidbody.detectCollisions = false;
-            rigidbody.velocity = Vector3.zero;
-        }
 
         base.OnDespawned();
     }
@@ -96,15 +94,19 @@ public class Projectile : EntityBase {
         if(rigidbody != null) {
             rigidbody.detectCollisions = false;
         }
+
+        if(collider != null)
+            collider.enabled = false;
     }
 
     // Use this for initialization
     protected override void Start() {
         base.Start();
-
     }
 
     public override void SpawnFinish() {
+        mSpawning = false;
+
         if(decayDelay == 0) {
             OnDecayEnd();
         }
@@ -144,10 +146,14 @@ public class Projectile : EntityBase {
         if(applyDirToUp && mStartDir != Vector3.zero) {
             transform.up = mStartDir;
         }
+
+        mSpawning = true;
     }
 
     public override void Release() {
         state = (int)State.Invalid;
+
+        mSpawning = false;
 
         base.Release();
     }

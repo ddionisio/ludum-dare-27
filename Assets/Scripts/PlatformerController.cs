@@ -564,8 +564,7 @@ public class PlatformerController : RigidBodyController {
                 mJumpLastTime = Time.fixedTime;
                 //mJumpCounter = Mathf.Clamp(mJumpCounter + 1, 0, jumpCounter);
 
-                if(mJumpCounter <= 0)
-                    mJumpCounter = 1;
+                mJumpCounter = 1;
 
                 if(jumpCallback != null)
                     jumpCallback(this);
