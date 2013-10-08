@@ -58,18 +58,18 @@ public class EnemyChargeController : MonoBehaviour {
         }
     }
 
-    void OnEnemyChangeState(EntityBase ent, int state) {
-        if(mEnemy.prevState == (int)Enemy.State.Attack && state == (int)Enemy.State.Dead) {
+    void OnEnemyChangeState(EntityBase ent) {
+        if(mEnemy.prevState == (int)Enemy.State.Attack && mEnemy.state == (int)Enemy.State.Dead) {
             mRestorePosOnRevive = true;
         }
 
-        if(state == (int)Enemy.State.Reviving) {
+        if(mEnemy.state == (int)Enemy.State.Reviving) {
             if(mRestorePosOnRevive) {
                 mEnemy.mover.position = mLastMoverPos;
                 mRestorePosOnRevive = false;
             }
         }
-        else if(state == (int)Enemy.State.Attack) {
+        else if(mEnemy.state == (int)Enemy.State.Attack) {
             mLastMoverPos = mEnemy.mover.position;
             mLastMoverRot = mEnemy.mover.rotation;
             mSeekToPos = mPlayer.controller.body.transform.position;

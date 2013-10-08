@@ -49,7 +49,7 @@ public class EnemySeekerController : MonoBehaviour {
         }
     }
 
-    void OnEnemyChangeState(EntityBase ent, int state) {
+    void OnEnemyChangeState(EntityBase ent) {
         ApplyEnemyState();
     }
 

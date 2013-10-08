@@ -492,8 +492,8 @@ public class PlayerController : MonoBehaviour {
         BombActive();
     }
 
-    void OnPlayerSetState(EntityBase ent, int state) {
-        switch((Player.State)state) {
+    void OnPlayerSetState(EntityBase ent) {
+        switch((Player.State)ent.state) {
             case Player.State.Normal:
                 mBodySpriteCtrl.animationActive = true;
                 inputEnabled = true;
