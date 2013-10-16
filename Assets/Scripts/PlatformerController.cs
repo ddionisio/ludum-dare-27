@@ -24,6 +24,7 @@ public class PlatformerController : RigidBodyController {
     public bool jumpWall = false; //wall jump
     public float jumpWallLockDelay = 0.2f;
 
+    public bool wallStick = true;
     public float wallStickAngleOfs = 15.0f; //what angle is acceptible to wall stick, within 90 based on dirHolder's up
     public float wallStickDelay; //delay to stick to wall when moving against one
     public float wallStickUpDelay; //how long to move up the wall once you stick
@@ -309,17 +310,18 @@ public class PlatformerController : RigidBodyController {
             mLastGround = false;
             mJumpCounter = jumpCounter;
         }
-        else if(!mJumpingWall && collisionFlags == CollisionFlags.Sides) {
+        //refresh wallstick
+        else if(wallStick && !mJumpingWall && collisionFlags == CollisionFlags.Sides) {
             Vector3 up = dirHolder.up;
 
-            //refresh wallstick
             if(collisionFlags == CollisionFlags.Sides) {
-                foreach(KeyValuePair<Collider, CollideInfo> pair in mColls) {
-                    if(pair.Value.flag == CollisionFlags.Sides) {
-                        float a = Vector3.Angle(up, pair.Value.normal);
+                for(int i = 0; i < mCollCount; i++) {
+                    CollideInfo inf = mColls[i];
+                    if(inf.flag == CollisionFlags.Sides) {
+                        float a = Vector3.Angle(up, inf.normal);
                         if(a >= 90.0f - wallStickAngleOfs && a <= 90.0f + wallStickAngleOfs) {
                             //wallStickForce
-                            mWallStickCollInfo = pair.Value;
+                            mWallStickCollInfo = inf;
                             mWallStickSide = M8.MathUtil.CheckSide(mWallStickCollInfo.normal, dirHolder.up);
                             mWallSticking = true;
                             mJump = false;
@@ -570,7 +572,7 @@ public class PlatformerController : RigidBodyController {
                     jumpCallback(this);
             }
             else if(!isSlopSlide) {
-                if(mJumpCounter >= 0 && (isGrounded || mJumpCounter < jumpCounter)) {
+                if(mJumpCounter < jumpCounter && (isGrounded || mJumpCounter > 0)) {
                     lockDrag = true;
                     rigidbody.drag = airDrag;
 

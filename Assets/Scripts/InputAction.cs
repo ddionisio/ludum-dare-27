@@ -9,4 +9,5 @@ public struct InputAction {
     public const int MenuAccept = 6;
     public const int MenuEscape = 7;
     public const int Special = 8;
+    public const int _count = 9;
 }
