@@ -14,27 +14,26 @@ public class EnemySeekerController : MonoBehaviour {
 
     public float orientSpeed = 90.0f;
 
+    public LayerMask visibilityMask;
+
     private Enemy mEnemy;
     private Player mPlayer;
     private Vector3 mStartPos;
     private Quaternion mStartRot;
-    private WaitForFixedUpdate mWait;
     private float mSeekLastTime;
 
     private Vector3 mSteerToDir;
 
     void ApplyEnemyState() {
-        StopAllCoroutines();
+        mSeekLastTime = 0.0f;
 
         switch((Enemy.State)mEnemy.state) {
             case Enemy.State.Normal:
                 mEnemy.facePlayer = false;
-                StartCoroutine(DoWander());
                 break;
 
             case Enemy.State.Attack:
                 mEnemy.facePlayer = true;
-                StartCoroutine(DoSeek());
                 break;
 
             case Enemy.State.Dead:
@@ -70,59 +69,54 @@ public class EnemySeekerController : MonoBehaviour {
 
         mStartPos = transform.position;
         mStartRot = transform.rotation;
-
-        mWait = new WaitForFixedUpdate();
     }
 
-    IEnumerator DoWander() {
-        mSeekLastTime = 0.0f;
+    void Update() {
+        switch((Enemy.State)mEnemy.state) {
+            case Enemy.State.Normal:
+                DoOrientation(mStartRot, Time.fixedDeltaTime);
 
-        while(true) {
-            DoOrientation(mStartRot, Time.fixedDeltaTime);
+                //movement
+                DoSeekDir(mStartPos, Time.fixedTime, idleDirDelay);
+                DoSteer(idleAccel, idleSpeedCap);
 
-            //movement
-            DoSeekDir(mStartPos, Time.fixedTime, idleDirDelay);
-            DoSteer(idleAccel, idleSpeedCap);
-
-            //check if near player
-            //make sure player is in normal or hurt
-            if(mPlayer.state == (int)Player.State.Normal || mPlayer.state == (int)Player.State.Hurt) {
-                Vector2 dpos = (mPlayer.controller.body.transform.position - transform.position);
-                float distSqr = dpos.SqrMagnitude();
-                if(distSqr <= seekRadius * seekRadius) {
-                    mEnemy.state = (int)Enemy.State.Attack;
-                    break;
+                //check if near player
+                //make sure player is in normal or hurt
+                if(mPlayer.state == (int)Player.State.Normal || mPlayer.state == (int)Player.State.Hurt) {
+                    Vector3 pos = transform.position;
+                    Vector2 dpos = (mPlayer.controller.body.transform.position - pos);
+                    float distSqr = dpos.SqrMagnitude();
+                    if(distSqr <= seekRadius * seekRadius) {
+                        //check if view is obscured
+                        Vector3 dir = dpos / Mathf.Sqrt(distSqr);
+                        if(!Physics.Raycast(pos, dir, seekRadius, visibilityMask)) {
+                            mEnemy.state = (int)Enemy.State.Attack;
+                        }
+                    }
                 }
-            }
-
-            yield return mWait;
-        }
-    }
-
-    IEnumerator DoSeek() {
-        mSeekLastTime = 0.0f;
-
-        while(true) {
-            Transform playerBodyTrans = mPlayer.controller.body.transform;
-
-            DoOrientation(playerBodyTrans.rotation, Time.fixedDeltaTime);
-
-            //movement, if player is in normal
-            if(mPlayer.state == (int)Player.State.Normal) {
-                DoSeekDir(playerBodyTrans.position, Time.fixedTime, seekDelay);
-            }
-
-            DoSteer(accel, speedCap);
-
-            //check if outside player
-            Vector2 dpos = (mPlayer.controller.body.transform.position - transform.position);
-            float distSqr = dpos.SqrMagnitude();
-            if(distSqr > seekRadius * seekRadius) {
-                mEnemy.state = (int)Enemy.State.Normal;
                 break;
-            }
 
-            yield return mWait;
+            case Enemy.State.Attack:
+                Transform playerBodyTrans = mPlayer.controller.body.transform;
+
+                DoOrientation(playerBodyTrans.rotation, Time.fixedDeltaTime);
+
+                //movement, if player is in normal
+                if(mPlayer.state == (int)Player.State.Normal) {
+                    DoSeekDir(playerBodyTrans.position, Time.fixedTime, seekDelay);
+                }
+
+                DoSteer(accel, speedCap);
+
+                //check if outside player
+                {
+                    Vector2 dpos = (mPlayer.controller.body.transform.position - transform.position);
+                    float distSqr = dpos.SqrMagnitude();
+                    if(distSqr > seekRadius * seekRadius) {
+                        mEnemy.state = (int)Enemy.State.Normal;
+                    }
+                }
+                break;
         }
     }
 
