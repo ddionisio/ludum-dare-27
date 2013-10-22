@@ -4,6 +4,8 @@ using System.Collections;
 public class BombController : MonoBehaviour {
     public delegate void Callback(BombController ctrl);
 
+    public float speedCap = 0.0f;
+
     public float deathDelay = 10.0f;
 
     public tk2dSpriteAnimator anim;
@@ -147,6 +149,16 @@ public class BombController : MonoBehaviour {
 
                 if(mCurDelay <= 0.0f && deathCallback != null)
                     deathCallback(this);
+            }
+        }
+    }
+
+    void FixedUpdate() {
+        if(speedCap > 0.0f) {
+            Vector3 vel = rigidbody.velocity;
+            float spdSqr = vel.sqrMagnitude;
+            if(spdSqr > speedCap * speedCap) {
+                rigidbody.velocity = (vel / Mathf.Sqrt(spdSqr)) * speedCap;
             }
         }
     }

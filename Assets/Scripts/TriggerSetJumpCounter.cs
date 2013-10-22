@@ -8,7 +8,8 @@ public class TriggerSetJumpCounter : MonoBehaviour {
     void OnTriggerEnter(Collider col) {
         if(col.gameObject.CompareTag(checkTag)) {
             PlatformerController ctrl = col.GetComponent<PlatformerController>();
-            ctrl.jumpCounterCurrent = counter;
+            if(!ctrl.isGrounded)
+                ctrl.jumpCounterCurrent = counter;
         }
     }
 }

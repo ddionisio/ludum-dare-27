@@ -21,6 +21,7 @@ public class EnemyShootController : MonoBehaviour {
     private bool mShootEnable;
     private Ray mVisionRay;
     private HashSet<Projectile> mLaunchedProjs = new HashSet<Projectile>();
+    private List<Projectile> mProjsRemove = new List<Projectile>(10);
 
     public bool shootEnable {
         get { return mShootEnable; }
@@ -50,12 +51,18 @@ public class EnemyShootController : MonoBehaviour {
         //release any projectiles that are currently spawning
         foreach(Projectile proj in mLaunchedProjs) {
             if(proj && proj.spawning) {
-                proj.Release();
+                mProjsRemove.Add(proj);
             }
         }
 
+        foreach(Projectile proj in mProjsRemove) {
+            proj.Release();
+        }
+
+        mProjsRemove.Clear();
+
         //no longer need to track projectiles
-        mLaunchedProjs.Clear();
+        //mLaunchedProjs.Clear();
     }
 
     void OnTriggerStay(Collider col) {
