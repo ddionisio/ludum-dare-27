@@ -26,7 +26,7 @@ public class BombDropOffTrigger : MonoBehaviour {
                 }
 
                 BombController bomb = col.GetComponent<BombController>();
-                bomb.Consume();
+                bomb.Consume(true);
             }
         }
     }

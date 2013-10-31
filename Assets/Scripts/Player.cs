@@ -11,7 +11,13 @@ public class Player : EntityBase {
         Victory
     }
 
-    public string gameoverScene = "gameover";
+    public delegate void OnGenericCall(Player player);
+
+    public bool bombEnabled = true;
+
+    public event OnGenericCall readyCallback; //finished entering the level
+
+    //public string gameoverScene = "gameover";
 
     private static Player mInstance;
 
@@ -56,7 +62,14 @@ public class Player : EntityBase {
     }
 
     public void OpenLevelComplete() {
+        //determine which modal to use
+
+        //normal
         UIModalManager.instance.ModalOpen("levelComplete");
+
+        //boss
+
+        //other
     }
 
     public void SetCheckPoint(Checkpoint c) {
@@ -97,7 +110,7 @@ public class Player : EntityBase {
                 break;
 
             case State.Normal:
-                if(!mTimerActive) {
+                if(mHUD.timerEnabled && !mTimerActive) {
                     mTimerActive = true;
                     StartCoroutine(Timer());
                 }
@@ -131,6 +144,8 @@ public class Player : EntityBase {
         if(mInstance == this)
             mInstance = null;
 
+        readyCallback = null;
+
         //dealloc here
 
         RemoveInput();
@@ -149,6 +164,9 @@ public class Player : EntityBase {
 
         //start ai, player control, etc
         state = (int)State.Normal;
+
+        if(readyCallback != null)
+            readyCallback(this);
     }
 
     protected override void SpawnStart() {

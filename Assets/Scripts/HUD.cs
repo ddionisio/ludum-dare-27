@@ -41,6 +41,12 @@ public class HUD : MonoBehaviour {
 
     public int starsFilled { get { return mStarsFilled; } }
 
+    public bool timerEnabled {
+        get {
+            return timerLabel && timerLabel.gameObject.activeInHierarchy;
+        }
+    }
+
     public void ResetData() {
         RefreshTimer(0.0f);
 
@@ -111,11 +117,6 @@ public class HUD : MonoBehaviour {
 
     // Use this for initialization
     void Start() {
-
-    }
-
-    // Update is called once per frame
-    void Update() {
 
     }
 }

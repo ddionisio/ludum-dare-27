@@ -40,6 +40,9 @@ public class PlayerController : MonoBehaviour {
         Down
     }
 
+    private const string attachSpriteClipEmpty = "empty";
+    private const string attachSpriteClipBomb = "bomb";
+
     private Player mPlayer;
     private PlatformerController mBody;
     private PlatformerSpriteController mBodySpriteCtrl;
@@ -83,7 +86,7 @@ public class PlayerController : MonoBehaviour {
 
     public PlatformerController body { get { return mBody; } }
 
-    public bool hasAttach { get { return !bomb.gameObject.activeSelf; } }
+    public bool hasAttach { get { return mPlayer.bombEnabled && !bomb.gameObject.activeSelf; } }
 
     public BombController bombCtrl { get { return mBombCtrl; } }
 
@@ -96,7 +99,7 @@ public class PlayerController : MonoBehaviour {
     void DoThrow(Vector3 pos, float speed, float angle, bool applyBodyVelocity) {
         mBody.ResetCollision();
 
-        attachSpriteAnim.Play("empty");
+        attachSpriteAnim.Play(attachSpriteClipEmpty);
 
         bomb.transform.position = pos;
         bomb.transform.rotation = throwPoint.rotation;
@@ -226,6 +229,9 @@ public class PlayerController : MonoBehaviour {
         }
     }
 
+    /// <summary>
+    /// Put bomb back on git girl's head.
+    /// </summary>
     public void BombActive() {
         if(mBody)
             mBody.ResetCollision();
@@ -238,14 +244,21 @@ public class PlayerController : MonoBehaviour {
         if(bombGrabber)
             bombGrabber.gameObject.SetActive(false);
 
-        if(attachSpriteAnim)
-            attachSpriteAnim.Play("bomb");
+        if(mPlayer.bombEnabled) {
+            if(attachSpriteAnim)
+                attachSpriteAnim.Play(attachSpriteClipBomb);
+
+            mPlayer.HUD.targetOffScreen.gameObject.SetActive(true);
+        }
+        else {
+            if(attachSpriteAnim)
+                attachSpriteAnim.Play(attachSpriteClipEmpty);
+
+            mPlayer.HUD.targetOffScreen.gameObject.SetActive(false);
+        }
 
         if(attachAnimator)
             attachAnimator.Play("default");
-
-
-        mPlayer.HUD.targetOffScreen.gameObject.SetActive(true);
     }
 
     public bool Hurt(Vector3 normal, bool forceBounce) {
@@ -487,7 +500,8 @@ public class PlayerController : MonoBehaviour {
 
         ResetData();
 
-        mPlayer.HUD.targetOffScreen.SetPOI(mTargetGO.transform);
+        if(mTargetGO)
+            mPlayer.HUD.targetOffScreen.SetPOI(mTargetGO.transform);
 
         BombActive();
     }
@@ -531,8 +545,10 @@ public class PlayerController : MonoBehaviour {
                 mBodySpriteCtrl.animationActive = false;
                 inputEnabled = false;
 
-                BombDropOffTrigger goalCtrl = mTargetGO.GetComponent<BombDropOffTrigger>();
-                goalCtrl.ResetData();
+                if(mTargetGO) {
+                    BombDropOffTrigger goalCtrl = mTargetGO.GetComponent<BombDropOffTrigger>();
+                    goalCtrl.ResetData();
+                }
                 break;
 
             case Player.State.Invalid:

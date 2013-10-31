@@ -13,6 +13,7 @@ public class BombController : MonoBehaviour {
     public GameObject highlightGO;
 
     public event Callback deathCallback;
+    public event Callback consumeCallback;
 
     private float mCurDelay;
 
@@ -46,13 +47,18 @@ public class BombController : MonoBehaviour {
     /// <summary>
     /// Use for goal
     /// </summary>
-    public void Consume() {
+    public void Consume(bool activateTimer) {
         mConsumed = true;
-        mTimerActive = true;
+
+        mTimerActive = activateTimer;
+
         collider.enabled = false;
         anim.gameObject.SetActive(false);
 
         mCurDelay = deathDelay;
+
+        if(consumeCallback != null)
+            consumeCallback(this);
     }
 
     public void Activate() {
@@ -107,6 +113,7 @@ public class BombController : MonoBehaviour {
 
     void OnDestroy() {
         deathCallback = null;
+        consumeCallback = null;
     }
 
     void Awake() {
@@ -115,7 +122,9 @@ public class BombController : MonoBehaviour {
         mExitGO = GameObject.FindGameObjectWithTag("Exit");
 
         mHUD.bombOffScreen.SetPOI(transform);
-        mHUD.bombOffScreenExit.SetPOI(mExitGO.transform);
+
+        if(mExitGO)
+            mHUD.bombOffScreenExit.SetPOI(mExitGO.transform);
 
         mTimerActive = true;
 
@@ -129,10 +138,12 @@ public class BombController : MonoBehaviour {
 
     void Update() {
         if(Player.instance.isGoal) {
-            mHUD.bombTimerAttach.target = mExitGO.transform;
+            if(mExitGO) {
+                mHUD.bombTimerAttach.target = mExitGO.transform;
 
-            mHUD.bombOffScreen.gameObject.SetActive(false);
-            mHUD.bombOffScreenExit.gameObject.SetActive(true);
+                mHUD.bombOffScreen.gameObject.SetActive(false);
+                mHUD.bombOffScreenExit.gameObject.SetActive(true);
+            }
         }
         else {
             mHUD.bombTimerAttach.target = transform;
