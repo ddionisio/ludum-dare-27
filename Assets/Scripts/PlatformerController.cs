@@ -13,23 +13,23 @@ public class PlatformerController : RigidBodyController {
     public Vector3 eyeOfs;
 
     public int jumpCounter = 1;
-    public float jumpAirImpulse = 2.5f;
-    public float jumpWallImpulse = 5.0f;
-    public float jumpWallUpImpulse = 4.0f;
-    public float jumpWaterForce = 5.0f;
-    public float jumpForce = 50.0f;
-    public float jumpDelay = 0.15f;
-    public float jumpReleaseDelay = 0.1f;
+    public float jumpAirImpulse = 3f;
+    public float jumpWallImpulse = 8f;
+    public float jumpWallUpImpulse = 4f;
+    public float jumpWaterForce = 5f;
+    public float jumpForce = 80.0f;
+    public float jumpDelay = 0.1f;
+    public float jumpReleaseDelay = 0.05f;
 
     public bool jumpWall = false; //wall jump
-    public float jumpWallLockDelay = 0.2f;
+    public float jumpWallLockDelay = 0.1f;
 
     public bool wallStick = true;
-    public float wallStickAngleOfs = 15.0f; //what angle is acceptible to wall stick, within 90 based on dirHolder's up
-    public float wallStickDelay; //delay to stick to wall when moving against one
-    public float wallStickUpDelay; //how long to move up the wall once you stick
-    public float wallStickUpForce; //slightly move up the wall
-    public float wallStickForce; //move towards the wall
+    public float wallStickAngleOfs = 10.0f; //what angle is acceptible to wall stick, within 90 based on dirHolder's up
+    public float wallStickDelay=0.2f; //delay to stick to wall when moving against one
+    public float wallStickUpDelay=0.2f; //how long to move up the wall once you stick
+    public float wallStickUpForce=60f; //slightly move up the wall
+    public float wallStickForce=40f; //move towards the wall
     public float wallStickDownSpeedCap = 5.0f; //reduce speed upon sticking to wall if going downward, 'friction'
 
     public string ladderTag = "Ladder";
